@@ -213,10 +213,19 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
   }
 }
 
+function resolveDiscordRedirectUri(req: Request): string {
+  if (env.DISCORD_REDIRECT_URI && !env.DISCORD_REDIRECT_URI.includes('localhost')) {
+    return env.DISCORD_REDIRECT_URI;
+  }
+  const host = req.get('x-forwarded-host') || req.get('host') || 'localhost:5000';
+  const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+  return `${proto}://${host}/api/auth/discord/callback`;
+}
+
 export async function getDiscordAuthUrl(req: Request, res: Response): Promise<void> {
   try {
     const clientId = env.DISCORD_CLIENT_ID;
-    const redirectUri = env.DISCORD_REDIRECT_URI;
+    const redirectUri = resolveDiscordRedirectUri(req);
 
     if (!clientId || !env.DISCORD_CLIENT_SECRET) {
       // Demo / simulated mode if user has not yet put real Discord Client ID & Secret
@@ -288,7 +297,7 @@ export async function discordCallback(req: Request, res: Response): Promise<void
         client_secret: env.DISCORD_CLIENT_SECRET,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: env.DISCORD_REDIRECT_URI
+        redirect_uri: resolveDiscordRedirectUri(req)
       }).toString(),
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
