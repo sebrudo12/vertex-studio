@@ -17,7 +17,7 @@ export default function AuthDiscordCallback() {
     const token = params.get("token");
     const err = params.get("error");
     if (err || !token) {
-      toast.error("Discord login failed. Please try again.");
+      toast.error(err ? `Discord error: ${decodeURIComponent(err)}` : "Discord login failed. Please try again.");
       nav("/login", { replace: true });
       return;
     }

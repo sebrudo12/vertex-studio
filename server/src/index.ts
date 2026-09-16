@@ -80,6 +80,28 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/api/health/db', async (req, res) => {
+  try {
+    const [rows]: any = await pool.query('SELECT 1 + 1 as result');
+    const [tables]: any = await pool.query('SHOW TABLES');
+    res.json({
+      database: 'connected',
+      test: rows[0]?.result,
+      tables: tables.map((t: any) => Object.values(t)[0]),
+      has_discord_id: Boolean(env.DISCORD_CLIENT_ID),
+      has_discord_secret: Boolean(env.DISCORD_CLIENT_SECRET),
+      discord_redirect: env.DISCORD_REDIRECT_URI,
+      client_url: env.CLIENT_URL,
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      database: 'error',
+      message: err.message,
+      code: err.code,
+    });
+  }
+});
+
 import fs from 'fs';
 
 // Serve client static build if available

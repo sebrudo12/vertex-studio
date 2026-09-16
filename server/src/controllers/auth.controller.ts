@@ -358,11 +358,12 @@ export async function discordCallback(req: Request, res: Response): Promise<void
       res.json({ token, user });
     }
   } catch (error: any) {
-    console.error('Discord callback error:', error.response?.data || error.message);
+    const errorMsg = error.response?.data ? JSON.stringify(error.response.data) : (error.message || 'auth_failed');
+    console.error('Discord callback error:', errorMsg);
     if (req.method === 'GET') {
-      res.redirect(`${env.CLIENT_URL}/auth/discord?error=auth_failed`);
+      res.redirect(`${env.CLIENT_URL}/auth/discord?error=${encodeURIComponent(errorMsg)}`);
     } else {
-      res.status(500).json({ detail: 'Failed to authenticate with Discord' });
+      res.status(500).json({ detail: errorMsg });
     }
   }
 }
