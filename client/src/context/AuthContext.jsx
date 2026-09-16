@@ -10,9 +10,11 @@ export function AuthProvider({ children }) {
   const loadSettings = async () => {
     try {
       const { data } = await api.get("/settings");
-      setSettings(data);
-      if (data?.accent_color) {
-        document.documentElement.style.setProperty("--accent-color", data.accent_color);
+      if (data && typeof data === "object" && !Array.isArray(data)) {
+        setSettings(data);
+        if (data?.accent_color) {
+          document.documentElement.style.setProperty("--accent-color", data.accent_color);
+        }
       }
     } catch (e) { /* ignore */ }
   };
@@ -22,7 +24,11 @@ export function AuthProvider({ children }) {
     if (!token) { setUser(false); return; }
     try {
       const { data } = await api.get("/auth/me");
-      setUser(data);
+      if (data && typeof data === "object") {
+        setUser(data);
+      } else {
+        setUser(false);
+      }
     } catch (e) {
       localStorage.removeItem("vx_token");
       setUser(false);

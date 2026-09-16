@@ -11,26 +11,30 @@ export default function Documentation() {
   const [q, setQ] = useState("");
 
   useEffect(() => {
-    api.get("/docs").then((r) => {
-      setDocs(r.data);
-      if (r.data.length) {
-        setActiveProduct(r.data[0].product);
-        setActiveSection(Object.keys(r.data[0].sections)[0]);
-      }
-    });
+    api.get("/docs")
+      .then((r) => {
+        const list = Array.isArray(r.data) ? r.data : [];
+        setDocs(list);
+        if (list.length && list[0]?.product) {
+          setActiveProduct(list[0].product);
+          setActiveSection(Object.keys(list[0].sections || {})[0]);
+        }
+      })
+      .catch(() => setDocs([]));
   }, []);
 
-  const current = docs.find((d) => d.product === activeProduct);
-  const sections = current ? Object.keys(current.sections) : [];
+  const safeDocs = Array.isArray(docs) ? docs : [];
+  const current = safeDocs.find((d) => d.product === activeProduct);
+  const sections = current ? Object.keys(current.sections || {}) : [];
 
   const filteredDocs = useMemo(() => {
-    if (!q) return docs;
-    return docs.map((d) => ({
+    if (!q) return safeDocs;
+    return safeDocs.map((d) => ({
       ...d,
-      _matches: Object.entries(d.sections).filter(([k, v]) =>
-        k.toLowerCase().includes(q.toLowerCase()) || v.toLowerCase().includes(q.toLowerCase())),
-    })).filter((d) => d.product.toLowerCase().includes(q.toLowerCase()) || d._matches.length);
-  }, [q, docs]);
+      _matches: Object.entries(d.sections || {}).filter(([k, v]) =>
+        k.toLowerCase().includes(q.toLowerCase()) || String(v).toLowerCase().includes(q.toLowerCase())),
+    })).filter((d) => (d.product || "").toLowerCase().includes(q.toLowerCase()) || d._matches.length);
+  }, [q, safeDocs]);
 
   return (
     <div>
@@ -49,7 +53,7 @@ export default function Documentation() {
       <div className="vx-container py-10 grid lg:grid-cols-4 gap-8">
         <aside className="lg:col-span-1">
           <div className="lg:sticky lg:top-24 space-y-6">
-            {(q ? filteredDocs : docs).map((d) => (
+            {(q ? filteredDocs : safeDocs).map((d) => (
               <div key={d.product}>
                 <button onClick={() => { setActiveProduct(d.product); setActiveSection(Object.keys(d.sections)[0]); setQ(""); }}
                   data-testid={`doc-product-${d.product.replace(/\s+/g, "-").toLowerCase()}`}

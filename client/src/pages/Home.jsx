@@ -28,9 +28,15 @@ export default function Home() {
   const stats = settings?.stats || {};
 
   useEffect(() => {
-    api.get("/products").then((r) => setProducts(r.data.slice(0, 6)));
-    api.get("/reviews").then((r) => setReviews(r.data.slice(0, 3)));
-    api.get("/announcements").then((r) => setAnnouncements(r.data.slice(0, 2)));
+    api.get("/products")
+      .then((r) => setProducts(Array.isArray(r.data) ? r.data.slice(0, 6) : []))
+      .catch(() => setProducts([]));
+    api.get("/reviews")
+      .then((r) => setReviews(Array.isArray(r.data) ? r.data.slice(0, 3) : []))
+      .catch(() => setReviews([]));
+    api.get("/announcements")
+      .then((r) => setAnnouncements(Array.isArray(r.data) ? r.data.slice(0, 2) : []))
+      .catch(() => setAnnouncements([]));
   }, []);
 
   return (
@@ -132,7 +138,7 @@ export default function Home() {
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+          {(Array.isArray(products) ? products : []).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
         </div>
       </section>
 
@@ -143,22 +149,22 @@ export default function Home() {
           <h2 className="font-display font-bold text-2xl sm:text-3xl mt-1">What our customers say</h2>
         </div>
         <div className="grid md:grid-cols-3 gap-6">
-          {reviews.map((r, i) => (
-            <motion.div key={r.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          {(Array.isArray(reviews) ? reviews : []).map((r, i) => (
+            <motion.div key={r.id || i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
               transition={{ delay: i * 0.08 }} className="rounded-2xl border border-white/10 bg-card p-6">
               <div className="flex gap-0.5 mb-3">
                 {Array.from({ length: 5 }).map((_, k) => (
-                  <Star key={k} className={`h-4 w-4 ${k < r.rating ? "fill-white text-white" : "text-white/20"}`} />
+                  <Star key={k} className={`h-4 w-4 ${k < (r.rating || 5) ? "fill-white text-white" : "text-white/20"}`} />
                 ))}
               </div>
-              <p className="text-sm text-slate-300 leading-relaxed">"{r.comment}"</p>
+              <p className="text-sm text-slate-300 leading-relaxed">"{r.comment || ""}"</p>
               <div className="mt-5 flex items-center gap-3">
                 <span className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center font-display font-bold text-sm">
-                  {r.username[0]}
+                  {(r.username || "U")[0]}
                 </span>
                 <div>
-                  <div className="text-sm font-semibold">{r.username}</div>
-                  <div className="text-xs text-muted-foreground">{r.product}</div>
+                  <div className="text-sm font-semibold">{r.username || "Anonymous"}</div>
+                  <div className="text-xs text-muted-foreground">{r.product || "FiveM Resource"}</div>
                 </div>
               </div>
             </motion.div>

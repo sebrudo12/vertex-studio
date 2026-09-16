@@ -13,12 +13,15 @@ export default function Store() {
   const [q, setQ] = useState("");
 
   useEffect(() => {
-    api.get("/products").then((r) => setProducts(r.data));
+    api.get("/products")
+      .then((r) => setProducts(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setProducts([]));
   }, []);
 
-  const filtered = products.filter((p) => {
+  const safeProducts = Array.isArray(products) ? products : [];
+  const filtered = safeProducts.filter((p) => {
     const matchCat = active === "All" || p.category === active;
-    const matchQ = p.name.toLowerCase().includes(q.toLowerCase()) || p.short_description.toLowerCase().includes(q.toLowerCase());
+    const matchQ = ((p.name || "") + " " + (p.short_description || "")).toLowerCase().includes(q.toLowerCase());
     return matchCat && matchQ;
   });
 

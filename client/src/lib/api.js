@@ -13,6 +13,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => {
+    if (
+      typeof response.data === "string" &&
+      (response.data.trim().toLowerCase().startsWith("<!doctype html") || response.data.trim().toLowerCase().startsWith("<html"))
+    ) {
+      return Promise.reject(new Error("API route returned HTML instead of JSON. Ensure VITE_API_URL is configured."));
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
+
 export function formatApiError(detail) {
   if (detail == null) return "Something went wrong. Please try again.";
   if (typeof detail === "string") return detail;

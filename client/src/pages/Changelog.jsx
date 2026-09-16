@@ -11,7 +11,13 @@ const GROUPS = [
 
 export default function Changelog() {
   const [logs, setLogs] = useState([]);
-  useEffect(() => { api.get("/changelogs").then((r) => setLogs(r.data)); }, []);
+  useEffect(() => {
+    api.get("/changelogs")
+      .then((r) => setLogs(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setLogs([]));
+  }, []);
+
+  const safeLogs = Array.isArray(logs) ? logs : [];
 
   return (
     <div>
@@ -25,7 +31,7 @@ export default function Changelog() {
 
       <div className="vx-container py-12 max-w-3xl">
         <div className="relative border-l border-white/10 pl-8 space-y-10">
-          {logs.map((log, i) => (
+          {safeLogs.map((log, i) => (
             <motion.div key={log.id} initial={{ opacity: 0, x: 16 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}
               transition={{ delay: i * 0.05 }} data-testid={`changelog-${log.id}`} className="relative">
               <span className="absolute -left-[42px] top-1 h-4 w-4 rounded-full bg-white border-4 border-[#080808]" />
