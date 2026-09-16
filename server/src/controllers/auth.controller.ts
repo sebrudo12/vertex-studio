@@ -320,7 +320,7 @@ export async function discordCallback(req: Request, res: Response): Promise<void
     let [userRows]: any = await pool.query('SELECT * FROM users WHERE discord_id = ? OR email = ?', [discordId, email]);
     let user;
 
-    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com'];
+    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com', 'kingsitonassir@gmail.com'];
     const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase()) || (userRows.length > 0 && userRows[0].role === 'admin');
     const targetRole = isAdmin ? 'admin' : 'customer';
 
