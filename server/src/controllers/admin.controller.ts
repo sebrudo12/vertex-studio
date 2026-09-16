@@ -169,7 +169,8 @@ export async function getAdminUsers(req: AuthRequest, res: Response): Promise<vo
   try {
     const [users]: any = await pool.query(`
       SELECT u.id, u.username as name, u.email, u.role, u.status, u.avatar_url as avatar, u.created_at,
-             (SELECT COUNT(*) FROM orders WHERE user_id = u.id) as orders_count
+             (SELECT COUNT(*) FROM orders WHERE user_id = u.id) as orders,
+             (SELECT COUNT(*) FROM licenses WHERE user_id = u.id) as licenses
       FROM users u
       ORDER BY u.created_at DESC
     `);
@@ -188,7 +189,8 @@ export async function handleAdminUserAction(req: AuthRequest, res: Response): Pr
       return;
     }
 
-    if (target[0].email.toLowerCase() === 'sebasruades8@gmail.com' && ['ban', 'suspend', 'demote'].includes(action)) {
+    const PROTECTED = ['sebasruades8@gmail.com', 'kingsitonassir@gmail.com', 'admin@vertexstudio.com'];
+    if (PROTECTED.includes(target[0].email.toLowerCase()) && ['ban', 'suspend', 'demote'].includes(action)) {
       res.status(400).json({ detail: 'Protected Super Admin account cannot be suspended or demoted' });
       return;
     }
@@ -215,7 +217,7 @@ export async function getAdmins(req: AuthRequest, res: Response): Promise<void> 
       SELECT id, username as name, email, role, status, avatar_url as avatar, discord_id, discord_tag, created_at
       FROM users
       WHERE role = "admin"
-      ORDER BY (email = 'sebasruades8@gmail.com') DESC, created_at ASC
+      ORDER BY (email = 'sebasruades8@gmail.com' OR email = 'kingsitonassir@gmail.com') DESC, created_at ASC
     `);
     res.json(admins);
   } catch (error: any) {
@@ -269,8 +271,9 @@ export async function demoteAdmin(req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    if (target[0].email.toLowerCase() === 'sebasruades8@gmail.com') {
-      res.status(400).json({ detail: 'Cannot demote the primary Super Admin (sebasruades8@gmail.com)' });
+    const PROTECTED = ['sebasruades8@gmail.com', 'kingsitonassir@gmail.com', 'admin@vertexstudio.com'];
+    if (PROTECTED.includes(target[0].email.toLowerCase())) {
+      res.status(400).json({ detail: 'Cannot demote a protected Super Admin account' });
       return;
     }
 
@@ -285,7 +288,7 @@ export async function demoteAdmin(req: AuthRequest, res: Response): Promise<void
 export async function getAdminOrders(req: AuthRequest, res: Response): Promise<void> {
   try {
     const [orders]: any = await pool.query(`
-      SELECT o.id, o.order_number, o.total_amount as amount, o.status, o.customer_email as user_email, o.created_at
+      SELECT o.id, o.order_number, o.total_amount as amount, o.status, o.payment_method, o.customer_email as user_email, o.created_at
       FROM orders o
       ORDER BY o.created_at DESC
     `);
@@ -310,10 +313,10 @@ export async function getAdminLicenses(req: AuthRequest, res: Response): Promise
   try {
     const [licenses]: any = await pool.query(`
       SELECT l.id, l.license_key as \`key\`, l.status, l.bound_server_ip, l.created_at, l.expires_at as expires,
-             u.email as user_email, p.title as product_name
+             COALESCE(u.email, 'Unknown') as user_email, COALESCE(p.title, 'General License') as product_name
       FROM licenses l
-      JOIN users u ON l.user_id = u.id
-      JOIN products p ON l.product_id = p.id
+      LEFT JOIN users u ON l.user_id = u.id
+      LEFT JOIN products p ON l.product_id = p.id
       ORDER BY l.created_at DESC
     `);
 
@@ -471,7 +474,13 @@ export async function updateAdminSettings(req: AuthRequest, res: Response): Prom
 export async function getAdminCoupons(req: AuthRequest, res: Response): Promise<void> {
   try {
     const [coupons]: any = await pool.query('SELECT * FROM coupons ORDER BY created_at DESC');
-    res.json(coupons);
+    res.json(coupons.map((c: any) => ({
+      ...c,
+      discount_type: 'percentage',
+      discount_value: c.discount_percent !== undefined ? c.discount_percent : 10,
+      min_spend: 0,
+      used_count: c.uses_count !== undefined ? c.uses_count : 0
+    })));
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch coupons' });
   }
@@ -479,17 +488,15 @@ export async function getAdminCoupons(req: AuthRequest, res: Response): Promise<
 
 export async function createAdminCoupon(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { code, discount_type, discount_value, min_spend, max_uses, expires_at } = req.body;
+    const { code, discount_type, discount_value, max_uses, expires_at } = req.body;
     if (!code || !discount_value) {
       res.status(400).json({ detail: 'Código y valor de descuento son requeridos' });
       return;
     }
 
     const cleanCode = String(code).trim().toUpperCase();
-    const type = discount_type === 'fixed' ? 'fixed' : 'percentage';
-    const val = parseFloat(discount_value) || 0;
-    const min = parseFloat(min_spend) || 0;
-    const maxU = max_uses ? parseInt(max_uses, 10) : null;
+    const percent = Math.min(100, Math.max(1, parseInt(discount_value, 10) || 10));
+    const maxU = max_uses ? parseInt(max_uses, 10) : 100;
     const exp = expires_at ? new Date(expires_at) : null;
 
     const [existing]: any = await pool.query('SELECT id FROM coupons WHERE code = ?', [cleanCode]);
@@ -499,8 +506,8 @@ export async function createAdminCoupon(req: AuthRequest, res: Response): Promis
     }
 
     const [ins]: any = await pool.query(
-      'INSERT INTO coupons (code, discount_type, discount_value, min_spend, max_uses, expires_at, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)',
-      [cleanCode, type, val, min, maxU, exp]
+      'INSERT INTO coupons (code, discount_percent, max_uses, uses_count, is_active, expires_at) VALUES (?, ?, ?, 0, 1, ?)',
+      [cleanCode, percent, maxU, exp]
     );
 
     res.status(201).json({ message: 'Cupón creado exitosamente', id: ins.insertId, code: cleanCode });

@@ -6,14 +6,39 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { Loader2 } from "lucide-react";
+
 const PRESETS = ["#FFFFFF", "#38BDF8", "#A855F7", "#22C55E", "#F59E0B", "#EF4444"];
+
+const DEFAULT_SETTINGS = {
+  accent_color: "#FFFFFF",
+  logo: "/logo.png",
+  stats: { resources: "15+", customers: "1,200+", feedback: "99%", support: "24/7" },
+  discord: { name: "Vertex Studio", invite: "https://discord.gg/vertexstudio", members: 3500, online: 850 }
+};
 
 export default function AdminSettings() {
   const { reloadSettings } = useAuth();
   const [s, setS] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { api.get("/settings").then((r) => setS(r.data)); }, []);
-  if (!s) return <div className="text-muted-foreground">Loading...</div>;
+  useEffect(() => {
+    api.get("/settings")
+      .then((r) => setS(r.data && typeof r.data === "object" && !Array.isArray(r.data) ? r.data : DEFAULT_SETTINGS))
+      .catch(() => setS(DEFAULT_SETTINGS))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading && !s) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+        <p className="text-sm text-muted-foreground font-mono">Cargando configuración...</p>
+      </div>
+    );
+  }
+
+  if (!s) return null;
 
   const save = async () => {
     try {

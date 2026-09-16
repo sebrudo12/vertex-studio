@@ -7,15 +7,33 @@ import { Button } from "@/components/ui/button";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
 
-  const load = (search = "") => api.get("/admin/users", { params: search ? { search } : {} }).then((r) => setUsers(r.data));
+  const load = async (search = "") => {
+    try {
+      setLoading(true);
+      const res = await api.get("/admin/users", { params: search ? { search } : {} });
+      setUsers(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("load users error:", err);
+      toast.error("Error al cargar usuarios");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => { load(); }, []);
 
   const act = async (id, action) => {
-    await api.post(`/admin/users/${id}/${action}`);
-    toast.success(action === "suspend" ? "User suspended" : "User restored");
-    load(q);
+    try {
+      await api.post(`/admin/users/${id}/${action}`);
+      toast.success(action === "suspend" ? "Usuario suspendido" : "Usuario reactivado");
+      load(q);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Error al actualizar estado del usuario");
+    }
   };
 
   return (
@@ -39,7 +57,20 @@ export default function AdminUsers() {
             <th className="text-right font-medium px-4 py-3">Actions</th>
           </tr></thead>
           <tbody className="divide-y divide-white/10">
-            {users.map((u) => (
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  Cargando usuarios...
+                </td>
+              </tr>
+            ) : users.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  No se encontraron usuarios.
+                </td>
+              </tr>
+            ) : (
+              users.map((u) => (
               <tr key={u.id} data-testid={`admin-user-${u.id}`}>
                 <td className="px-4 py-3"><div className="font-medium">{u.name}</div><div className="text-xs text-muted-foreground">{u.email}</div></td>
                 <td className="px-4 py-3 hidden md:table-cell capitalize">{u.role}</td>
@@ -54,7 +85,8 @@ export default function AdminUsers() {
                   )}
                 </td>
               </tr>
-            ))}
+              ))
+            )}
           </tbody>
         </table>
       </div>

@@ -1,15 +1,23 @@
 import axios from "axios";
 
-const rawBackend = (typeof import.meta !== "undefined" && (import.meta.env?.VITE_API_URL || import.meta.env?.VITE_BACKEND_URL)) || "";
+const defaultBackend = "https://vertex-studio-api.onrender.com";
+const rawBackend = (typeof import.meta !== "undefined" && (import.meta.env?.VITE_API_URL || import.meta.env?.VITE_BACKEND_URL)) || defaultBackend;
 export const API = rawBackend 
   ? (rawBackend.endsWith("/api") ? rawBackend : `${rawBackend.replace(/\/$/, "")}/api`) 
-  : "/api";
+  : `${defaultBackend}/api`;
 
-const api = axios.create({ baseURL: API, withCredentials: true });
+const api = axios.create({ baseURL: API });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("vx_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = typeof window !== "undefined" ? localStorage.getItem("vx_token") : null;
+  if (token) {
+    if (config.headers && typeof config.headers.set === "function") {
+      config.headers.set("Authorization", `Bearer ${token}`);
+    } else {
+      config.headers = config.headers || {};
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
   return config;
 });
 

@@ -3,10 +3,13 @@ import api from "@/lib/api";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => { 
     api.get("/admin/orders")
       .then((r) => setOrders(Array.isArray(r.data) ? r.data : []))
-      .catch(() => setOrders([])); 
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false)); 
   }, []);
 
   return (
@@ -23,7 +26,11 @@ export default function AdminOrders() {
             <th className="text-left font-medium px-4 py-3">Status</th>
           </tr></thead>
           <tbody className="divide-y divide-white/10">
-            {orders.length === 0 ? <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No orders yet.</td></tr> :
+            {loading ? (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">Cargando pedidos...</td></tr>
+            ) : orders.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No hay pedidos registrados todavía.</td></tr>
+            ) : (
               orders.map((o) => {
                 const orderIdStr = o.order_number || (o.id !== undefined && o.id !== null ? `ORD-${String(o.id).padStart(4, "0")}` : "-");
                 const itemsText = Array.isArray(o.items) && o.items.length > 0 
@@ -41,7 +48,8 @@ export default function AdminOrders() {
                     <td className="px-4 py-3"><span className="text-xs text-emerald-300 capitalize">{o.status}</span></td>
                   </tr>
                 );
-              })}
+              })
+            )}
           </tbody>
         </table>
       </div>

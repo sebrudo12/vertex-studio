@@ -34,7 +34,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const passwordHash = await bcrypt.hash(password, 10);
     const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
 
-    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com'];
+    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com', 'kingsitonassir@gmail.com'];
     const assignedRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'customer';
 
     const [result]: any = await pool.query(
@@ -107,7 +107,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com'];
+    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com', 'kingsitonassir@gmail.com'];
     if (ADMIN_EMAILS.includes(user.email.toLowerCase()) && user.role !== 'admin') {
       user.role = 'admin';
       await pool.query('UPDATE users SET role = "admin" WHERE id = ?', [user.id]);

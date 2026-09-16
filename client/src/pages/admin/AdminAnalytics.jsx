@@ -2,12 +2,57 @@ import { useEffect, useState } from "react";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell } from "recharts";
 import api from "@/lib/api";
 
+import { Loader2, RefreshCw, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 const COLORS = ["#ffffff", "#cbd5e1", "#94a3b8", "#64748b", "#475569", "#334155"];
 
 export default function AdminAnalytics() {
   const [a, setA] = useState(null);
-  useEffect(() => { api.get("/admin/analytics").then((r) => setA(r.data)); }, []);
-  if (!a) return <div className="text-muted-foreground">Loading...</div>;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await api.get("/admin/analytics");
+      setA(res.data);
+    } catch (err) {
+      console.error("Failed to load analytics:", err);
+      setError(err.response?.data?.error || err.message || "Error al conectar con el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  if (loading && !a) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+        <p className="text-sm text-muted-foreground font-mono">Cargando análisis detallados...</p>
+      </div>
+    );
+  }
+
+  if (error && !a) {
+    return (
+      <div className="p-6 rounded-2xl border border-red-500/20 bg-red-500/5 text-center max-w-md mx-auto my-12 space-y-4">
+        <AlertTriangle className="h-10 w-10 text-red-400 mx-auto" />
+        <h2 className="font-display font-bold text-lg text-white">Error al cargar estadísticas</h2>
+        <p className="text-xs text-muted-foreground">{error}</p>
+        <Button onClick={fetchAnalytics} variant="outline" className="border-white/20 hover:bg-white/10 text-white text-xs">
+          <RefreshCw className="h-3.5 w-3.5 mr-2" /> Reintentar
+        </Button>
+      </div>
+    );
+  }
+
+  if (!a) return null;
 
   return (
     <div className="space-y-6">

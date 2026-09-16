@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar, CartesianGrid } from "recharts";
-import { DollarSign, ShoppingCart, Users, Package, Key, Download, Ticket, Star } from "lucide-react";
+import { DollarSign, ShoppingCart, Users, Package, Key, Download, Ticket, Star, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import api from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 function KPI({ icon: Icon, label, value }) {
   return (
@@ -14,8 +15,50 @@ function KPI({ icon: Icon, label, value }) {
 
 export default function AdminDashboard() {
   const [a, setA] = useState(null);
-  useEffect(() => { api.get("/admin/analytics").then((r) => setA(r.data)); }, []);
-  if (!a) return <div className="text-muted-foreground">Loading...</div>;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchAnalytics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await api.get("/admin/analytics");
+      setA(res.data);
+    } catch (err) {
+      console.error("Failed to load admin analytics:", err);
+      setError(err.response?.data?.error || err.message || "Error al conectar con el servidor");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  if (loading && !a) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-white/60" />
+        <p className="text-sm text-muted-foreground font-mono">Cargando métricas de Vertex Studio...</p>
+      </div>
+    );
+  }
+
+  if (error && !a) {
+    return (
+      <div className="p-6 rounded-2xl border border-red-500/20 bg-red-500/5 text-center max-w-md mx-auto my-12 space-y-4">
+        <AlertTriangle className="h-10 w-10 text-red-400 mx-auto" />
+        <h2 className="font-display font-bold text-lg text-white">Error al cargar el panel</h2>
+        <p className="text-xs text-muted-foreground">{error}</p>
+        <Button onClick={fetchAnalytics} variant="outline" className="border-white/20 hover:bg-white/10 text-white text-xs">
+          <RefreshCw className="h-3.5 w-3.5 mr-2" /> Reintentar
+        </Button>
+      </div>
+    );
+  }
+
+  if (!a) return null;
 
   return (
     <div className="space-y-6">

@@ -28,8 +28,10 @@ export default function AdminCoupons() {
       setLoading(true);
       const { data } = await api.get("/admin/coupons");
       setCoupons(Array.isArray(data) ? data : []);
-    } catch {
-      toast.error("Error al cargar cupones");
+    } catch (err) {
+      console.error("loadCoupons error:", err);
+      toast.error(err.response?.data?.error || "Error al cargar cupones");
+      setCoupons([]);
     } finally {
       setLoading(false);
     }
@@ -143,7 +145,9 @@ export default function AdminCoupons() {
               </tr>
             ) : (
               coupons.map((c) => {
-                const isPercentage = c.discount_type === "percentage";
+                const discountVal = c.discount_value !== undefined ? c.discount_value : (c.discount_percent || 0);
+                const usedCount = c.used_count !== undefined ? c.used_count : (c.uses_count || 0);
+                const isPercentage = c.discount_type ? c.discount_type === "percentage" : true;
                 const isExpired = c.expires_at && new Date() > new Date(c.expires_at);
 
                 return (
@@ -170,21 +174,21 @@ export default function AdminCoupons() {
                     <td className="px-4 py-3.5 font-semibold text-emerald-300">
                       {isPercentage ? (
                         <span className="inline-flex items-center gap-1">
-                          <Percent className="h-3.5 w-3.5" /> {Number(c.discount_value)}% OFF
+                          <Percent className="h-3.5 w-3.5" /> {Number(discountVal)}% OFF
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1">
-                          <DollarSign className="h-3.5 w-3.5" /> -€{Number(c.discount_value).toFixed(2)}
+                          <DollarSign className="h-3.5 w-3.5" /> -€{Number(discountVal).toFixed(2)}
                         </span>
                       )}
                     </td>
 
                     <td className="px-4 py-3.5 hidden sm:table-cell text-xs text-muted-foreground font-mono">
-                      {Number(c.min_spend) > 0 ? `€${Number(c.min_spend).toFixed(2)}` : "Sin mínimo"}
+                      {Number(c.min_spend || 0) > 0 ? `€${Number(c.min_spend).toFixed(2)}` : "Sin mínimo"}
                     </td>
 
                     <td className="px-4 py-3.5 hidden md:table-cell text-xs text-muted-foreground">
-                      <span className="font-mono text-white font-medium">{c.used_count}</span>
+                      <span className="font-mono text-white font-medium">{usedCount}</span>
                       {c.max_uses !== null ? ` / ${c.max_uses}` : " (Ilimitado)"}
                     </td>
 
