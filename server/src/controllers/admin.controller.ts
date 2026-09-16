@@ -189,7 +189,7 @@ export async function handleAdminUserAction(req: AuthRequest, res: Response): Pr
       return;
     }
 
-    const PROTECTED = ['sebasruades8@gmail.com', 'kingsitonassir@gmail.com', 'admin@vertexstudio.com'];
+    const PROTECTED = ['sebasruades8@gmail.com', 'admin@vertexstudio.com'];
     if (PROTECTED.includes(target[0].email.toLowerCase()) && ['ban', 'suspend', 'demote'].includes(action)) {
       res.status(400).json({ detail: 'Protected Super Admin account cannot be suspended or demoted' });
       return;
@@ -217,7 +217,7 @@ export async function getAdmins(req: AuthRequest, res: Response): Promise<void> 
       SELECT id, username as name, email, role, status, avatar_url as avatar, discord_id, discord_tag, created_at
       FROM users
       WHERE role = "admin"
-      ORDER BY (email = 'sebasruades8@gmail.com' OR email = 'kingsitonassir@gmail.com') DESC, created_at ASC
+      ORDER BY (email = 'sebasruades8@gmail.com') DESC, created_at ASC
     `);
     res.json(admins);
   } catch (error: any) {
@@ -271,7 +271,7 @@ export async function demoteAdmin(req: AuthRequest, res: Response): Promise<void
       return;
     }
 
-    const PROTECTED = ['sebasruades8@gmail.com', 'kingsitonassir@gmail.com', 'admin@vertexstudio.com'];
+    const PROTECTED = ['sebasruades8@gmail.com', 'admin@vertexstudio.com'];
     if (PROTECTED.includes(target[0].email.toLowerCase())) {
       res.status(400).json({ detail: 'Cannot demote a protected Super Admin account' });
       return;

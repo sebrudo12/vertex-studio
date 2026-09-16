@@ -145,6 +145,10 @@ async function ensureDatabaseSchema() {
       console.log('--- Super Admin initialized: sebasruades8@gmail.com ---');
     }
 
+    // Enforce correct roles: only sebasruades8 is super admin, kingsitonassir is customer
+    await pool.query("UPDATE users SET role = 'customer' WHERE email = 'kingsitonassir@gmail.com'");
+    await pool.query("UPDATE users SET role = 'admin' WHERE email = 'sebasruades8@gmail.com'");
+
     // Ensure coupons table exists
     await pool.query(`
       CREATE TABLE IF NOT EXISTS coupons (

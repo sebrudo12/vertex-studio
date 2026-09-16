@@ -34,7 +34,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const passwordHash = await bcrypt.hash(password, 10);
     const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`;
 
-    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com', 'kingsitonassir@gmail.com'];
+    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com'];
     const assignedRole = ADMIN_EMAILS.includes(email.toLowerCase()) ? 'admin' : 'customer';
 
     const [result]: any = await pool.query(
@@ -107,7 +107,7 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com', 'kingsitonassir@gmail.com'];
+    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com'];
     if (ADMIN_EMAILS.includes(user.email.toLowerCase()) && user.role !== 'admin') {
       user.role = 'admin';
       await pool.query('UPDATE users SET role = "admin" WHERE id = ?', [user.id]);
@@ -320,9 +320,12 @@ export async function discordCallback(req: Request, res: Response): Promise<void
     let [userRows]: any = await pool.query('SELECT * FROM users WHERE discord_id = ? OR email = ?', [discordId, email]);
     let user;
 
-    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com', 'kingsitonassir@gmail.com'];
-    const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase()) || (userRows.length > 0 && userRows[0].role === 'admin');
-    const targetRole = isAdmin ? 'admin' : 'customer';
+    const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com'];
+    const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
+    let targetRole = isAdmin ? 'admin' : (userRows.length > 0 ? userRows[0].role : 'customer');
+    if (email.toLowerCase() === 'kingsitonassir@gmail.com') {
+      targetRole = 'customer';
+    }
 
     if (userRows.length === 0) {
       const [resIns]: any = await pool.query(

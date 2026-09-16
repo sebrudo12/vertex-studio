@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-const SUPER_ADMINS = ["sebasruades8@gmail.com", "kingsitonassir@gmail.com"];
+const SUPER_ADMIN = "sebasruades8@gmail.com";
 
 export default function AdminAdmins() {
   const [admins, setAdmins] = useState([]);
@@ -58,8 +58,8 @@ export default function AdminAdmins() {
   };
 
   const handleDemote = async (admin) => {
-    if (SUPER_ADMINS.map((e) => e.toLowerCase()).includes(admin.email.toLowerCase())) {
-      return toast.error("No se puede degradar a un Administrador Principal");
+    if (admin.email.toLowerCase() === SUPER_ADMIN.toLowerCase()) {
+      return toast.error("No se puede degradar al Administrador Principal");
     }
 
     if (!window.confirm(`¿Estás seguro de degradar a ${admin.name || admin.email} de vuelta al rol de cliente?`)) {
@@ -103,16 +103,10 @@ export default function AdminAdmins() {
           <div className="mt-2 font-display font-black text-3xl text-white">{admins.length}</div>
         </div>
         <div className="p-5 rounded-2xl border border-white/10 bg-card">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">Super Admins Principales</span>
-          <div className="mt-2 text-xs font-semibold text-white space-y-1">
-            <div className="flex items-center gap-2 truncate">
-              <Crown className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span className="truncate">sebasruades8@gmail.com</span>
-            </div>
-            <div className="flex items-center gap-2 truncate text-muted-foreground">
-              <Crown className="h-3.5 w-3.5 text-amber-400/80 shrink-0" />
-              <span className="truncate">kingsitonassir@gmail.com</span>
-            </div>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">Super Admin Principal</span>
+          <div className="mt-2 text-sm font-semibold text-white flex items-center gap-2 truncate">
+            <Crown className="h-4 w-4 text-amber-400 shrink-0" />
+            <span className="truncate">{SUPER_ADMIN}</span>
           </div>
         </div>
         <div className="p-5 rounded-2xl border border-white/10 bg-card">
@@ -150,7 +144,7 @@ export default function AdminAdmins() {
               </tr>
             ) : (
               admins.map((a) => {
-                const isSuper = SUPER_ADMINS.map((e) => e.toLowerCase()).includes(a.email.toLowerCase());
+                const isSuper = a.email.toLowerCase() === SUPER_ADMIN.toLowerCase();
                 return (
                   <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="px-4 py-4">
