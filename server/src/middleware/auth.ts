@@ -32,7 +32,7 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
 
     const [rows]: any = await pool.query(
       'SELECT id, username, email, role, status, avatar_url, discord_id, discord_tag FROM users WHERE id = ? OR email = ?',
-      [decoded.id, decoded.email || '']
+      [decoded.id || 0, decoded.email || '']
     );
 
     if (rows.length === 0) {
@@ -48,8 +48,8 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
 
     req.user = user;
     next();
-  } catch (err) {
-    res.status(401).json({ error: 'Invalid or expired token' });
+  } catch (err: any) {
+    res.status(401).json({ error: 'Invalid or expired token', detail: err.message });
   }
 }
 

@@ -72,16 +72,23 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.get('/api/health/migrate', async (req, res) => {
+app.get('/api/health/db', async (req, res) => {
   try {
-    await ensureDatabaseSchema();
+    const [rows]: any = await pool.query('SELECT 1 + 1 as result');
     const [tables]: any = await pool.query('SHOW TABLES');
+    const [users]: any = await pool.query('SELECT id, username, email, role, status FROM users');
     res.json({
-      status: 'migrated',
+      database: 'connected',
+      test: rows[0]?.result,
       tables: tables.map((t: any) => Object.values(t)[0]),
+      users,
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message, stack: err.stack });
+    res.status(500).json({
+      database: 'error',
+      message: err.message,
+      code: err.code,
+    });
   }
 });
 
