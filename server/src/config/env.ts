@@ -8,11 +8,11 @@ export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
 
-  DB_HOST: process.env.DB_HOST || 'localhost',
-  DB_PORT: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 3306,
-  DB_USER: process.env.DB_USER || 'root',
-  DB_PASSWORD: process.env.DB_PASSWORD || '',
-  DB_NAME: process.env.DB_NAME || 'vertex_studio',
+  DB_HOST: process.env.DB_HOST || process.env.MYSQLHOST || 'localhost',
+  DB_PORT: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : (process.env.MYSQLPORT ? parseInt(process.env.MYSQLPORT, 10) : 3306),
+  DB_USER: process.env.DB_USER || process.env.MYSQLUSER || 'root',
+  DB_PASSWORD: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || '',
+  DB_NAME: process.env.DB_NAME || process.env.MYSQLDATABASE || 'vertex_studio',
 
   JWT_SECRET: process.env.JWT_SECRET || 'vertex_studio_secret_jwt_2026',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',

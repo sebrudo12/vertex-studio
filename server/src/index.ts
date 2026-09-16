@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
 import { env } from './config/env';
-import { testConnection } from './config/db';
+import { testConnection, pool } from './config/db';
 import { errorHandler } from './middleware/errorHandler';
 
 // Import Routes
@@ -32,7 +32,18 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 app.use(cors({
-  origin: [env.CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      origin === env.CLIENT_URL ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
   credentials: true,
 }));
 
@@ -86,17 +97,55 @@ if (fs.existsSync(clientDistPath)) {
 // Error handling
 app.use(errorHandler);
 
+async function ensureDatabaseSchema() {
+  try {
+    const [rows]: any = await pool.query("SHOW TABLES LIKE 'users'");
+    if (!rows || rows.length === 0) {
+      console.log('--- Database empty, running initial schema migration ---');
+      const schemaPath = path.resolve(__dirname, 'db/schema.sql');
+      if (fs.existsSync(schemaPath)) {
+        const sql = fs.readFileSync(schemaPath, 'utf8');
+        await pool.query(sql);
+        console.log('--- Database schema created successfully ---');
+      }
+    }
+
+    // Ensure Super Admin exists
+    const [adminRows]: any = await pool.query("SELECT id FROM users WHERE email = 'sebasruades8@gmail.com'");
+    if (!adminRows || adminRows.length === 0) {
+      const bcrypt = require('bcryptjs');
+      const hash = await bcrypt.hash('Admin2026!', 10);
+      await pool.query(
+        "INSERT INTO users (id, email, username, password, role, is_verified) VALUES (?, ?, ?, ?, 'admin', 1)",
+        ['admin-super-id', 'sebasruades8@gmail.com', 'Sebrudo09', hash]
+      );
+      console.log('--- Super Admin initialized: sebasruades8@gmail.com ---');
+    }
+
+    // Ensure coupon exists
+    const [couponRows]: any = await pool.query("SELECT id FROM coupons WHERE code = 'VERTEX20'");
+    if (!couponRows || couponRows.length === 0) {
+      await pool.query(
+        "INSERT INTO coupons (code, discount_percent, max_uses, uses_count, is_active) VALUES ('VERTEX20', 20, 100, 0, 1)"
+      );
+    }
+  } catch (err) {
+    console.error('Database schema auto-check error:', err);
+  }
+}
+
 async function startServer() {
   const dbConnected = await testConnection();
   if (!dbConnected) {
-    console.error('WARNING: Database connection failed. Please ensure MySQL is running on port ' + env.DB_PORT);
+    console.error('WARNING: Database connection failed. Please check your DB credentials.');
   } else {
     console.log('Successfully connected to MySQL database: ' + env.DB_NAME);
+    await ensureDatabaseSchema();
   }
 
   app.listen(env.PORT, () => {
-    console.log(`ðŸš€ Vertex Studio API running at http://localhost:${env.PORT}`);
-    console.log(`ðŸ“¡ Client allowed at: ${env.CLIENT_URL}`);
+    console.log(`Vertex Studio API running at port ${env.PORT}`);
+    console.log(`Allowed Client URL: ${env.CLIENT_URL}`);
   });
 }
 
