@@ -1,6 +1,12 @@
 import mysql from 'mysql2/promise';
 import { env } from './env';
 
+const useSsl =
+  process.env.DB_SSL === 'true' ||
+  (env.DB_HOST && env.DB_HOST.includes('tidbcloud.com')) ||
+  env.DB_PORT === 4000 ||
+  Boolean(process.env.MYSQL_URL || process.env.DATABASE_URL);
+
 export const pool = (process.env.MYSQL_URL || process.env.DATABASE_URL)
   ? mysql.createPool({
       uri: process.env.MYSQL_URL || process.env.DATABASE_URL,
@@ -10,6 +16,7 @@ export const pool = (process.env.MYSQL_URL || process.env.DATABASE_URL)
       charset: 'utf8mb4',
       dateStrings: true,
       multipleStatements: true,
+      ssl: { rejectUnauthorized: false },
     })
   : mysql.createPool({
       host: env.DB_HOST,
@@ -23,6 +30,7 @@ export const pool = (process.env.MYSQL_URL || process.env.DATABASE_URL)
       charset: 'utf8mb4',
       dateStrings: true,
       multipleStatements: true,
+      ssl: useSsl ? { rejectUnauthorized: false } : undefined,
     });
 
 export async function testConnection(): Promise<boolean> {
