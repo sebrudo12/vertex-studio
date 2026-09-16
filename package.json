@@ -1,0 +1,18 @@
+{
+  "name": "vertex-studio-platform",
+  "version": "1.0.0",
+  "description": "Vertex Studio - Premium FiveM Resources Platform",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm.cmd --prefix server run dev\" \"npm.cmd --prefix client run dev\"",
+    "dev:server": "npm.cmd --prefix server run dev",
+    "dev:client": "npm.cmd --prefix client run dev",
+    "build": "npm.cmd --prefix server run build && npm.cmd --prefix client run build",
+    "seed": "npm.cmd --prefix server run db:seed",
+    "migrate": "npm.cmd --prefix server run db:migrate",
+    "start": "npm.cmd --prefix server run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
