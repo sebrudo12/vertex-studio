@@ -146,6 +146,20 @@ async function ensureDatabaseSchema() {
       console.log('--- Super Admin initialized: sebasruades8@gmail.com ---');
     }
 
+    // Ensure coupons table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS coupons (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        code VARCHAR(50) NOT NULL UNIQUE,
+        discount_percent INT UNSIGNED NOT NULL DEFAULT 10,
+        max_uses INT UNSIGNED NOT NULL DEFAULT 100,
+        uses_count INT UNSIGNED NOT NULL DEFAULT 0,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        expires_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
     // Ensure coupon exists
     const [couponRows]: any = await pool.query("SELECT id FROM coupons WHERE code = 'VERTEX20'");
     if (!couponRows || couponRows.length === 0) {
