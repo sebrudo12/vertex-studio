@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
     "dev:server": "npm --prefix server run dev",
     "dev:client": "npm --prefix client run dev",
-    "build": "npm --prefix client run build",
+    "build": "cd client && npm install && npm run build",
     "build:all": "npm --prefix server run build && npm --prefix client run build",
     "seed": "npm --prefix server run db:seed",
     "migrate": "npm --prefix server run db:migrate",
