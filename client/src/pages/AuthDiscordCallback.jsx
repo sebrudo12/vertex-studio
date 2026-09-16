@@ -21,17 +21,29 @@ export default function AuthDiscordCallback() {
       nav("/login", { replace: true });
       return;
     }
+
+    const role = params.get("role") || "customer";
+    const name = params.get("name") || "User";
+    const email = params.get("email") || "";
+    const avatar = params.get("avatar") || "";
+
     localStorage.setItem("vx_token", token);
-    api.get("/auth/me")
+    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    const initialUser = { name, username: name, role, email, avatar };
+    setUser(initialUser);
+    toast.success(`Welcome back, ${name}!`);
+    nav(role === "admin" ? "/admin" : "/dashboard", { replace: true });
+
+    // Sync full profile in background
+    api.get("/auth/me", { headers: { Authorization: `Bearer ${token}` } })
       .then(({ data }) => {
-        setUser(data);
-        toast.success(`Welcome, ${data.name}`);
-        nav(data.role === "admin" ? "/admin" : "/dashboard", { replace: true });
+        if (data && typeof data === "object") {
+          setUser(data.user || data);
+        }
       })
-      .catch(() => {
-        localStorage.removeItem("vx_token");
-        toast.error("Session could not be established.");
-        nav("/login", { replace: true });
+      .catch((e) => {
+        console.warn("Background profile sync note:", e.message);
       });
   }, [params, nav, setUser]);
 

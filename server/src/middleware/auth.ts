@@ -28,11 +28,11 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
       return;
     }
 
-    const decoded = jwt.verify(token, env.JWT_SECRET) as { id: number };
+    const decoded: any = jwt.verify(token, env.JWT_SECRET);
 
     const [rows]: any = await pool.query(
-      'SELECT id, username, email, role, status, avatar_url, discord_id, discord_tag FROM users WHERE id = ?',
-      [decoded.id]
+      'SELECT id, username, email, role, status, avatar_url, discord_id, discord_tag FROM users WHERE id = ? OR email = ?',
+      [decoded.id, decoded.email || '']
     );
 
     if (rows.length === 0) {

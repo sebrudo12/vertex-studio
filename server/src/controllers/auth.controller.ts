@@ -353,7 +353,14 @@ export async function discordCallback(req: Request, res: Response): Promise<void
     );
 
     if (req.method === 'GET') {
-      res.redirect(`${env.CLIENT_URL}/auth/discord?token=${token}`);
+      const redirectParams = new URLSearchParams({
+        token,
+        role: user.role || 'customer',
+        name: user.username || 'User',
+        email: user.email || '',
+        avatar: user.avatar_url || '',
+      });
+      res.redirect(`${env.CLIENT_URL}/auth/discord?${redirectParams.toString()}`);
     } else {
       res.json({ token, user });
     }
