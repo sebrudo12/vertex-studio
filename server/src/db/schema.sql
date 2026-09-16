@@ -1,10 +1,7 @@
 -- ==========================================================
 -- VERTEX STUDIO - FiveM Store Database Schema
--- Compatible with MySQL 8.0+ / MariaDB 10.4+
+-- Compatible with MySQL 8.0+ / MariaDB 10.4+ / TiDB Cloud
 -- ==========================================================
-
-CREATE DATABASE IF NOT EXISTS `vertex_studio` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `vertex_studio`;
 
 -- 1. USERS
 CREATE TABLE IF NOT EXISTS `users` (

@@ -80,25 +80,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-app.get('/api/health/db', async (req, res) => {
+app.get('/api/health/migrate', async (req, res) => {
   try {
-    const [rows]: any = await pool.query('SELECT 1 + 1 as result');
+    await ensureDatabaseSchema();
     const [tables]: any = await pool.query('SHOW TABLES');
     res.json({
-      database: 'connected',
-      test: rows[0]?.result,
+      status: 'migrated',
       tables: tables.map((t: any) => Object.values(t)[0]),
-      has_discord_id: Boolean(env.DISCORD_CLIENT_ID),
-      has_discord_secret: Boolean(env.DISCORD_CLIENT_SECRET),
-      discord_redirect: env.DISCORD_REDIRECT_URI,
-      client_url: env.CLIENT_URL,
     });
   } catch (err: any) {
-    res.status(500).json({
-      database: 'error',
-      message: err.message,
-      code: err.code,
-    });
+    res.status(500).json({ error: err.message, stack: err.stack });
   }
 });
 
@@ -124,11 +115,22 @@ async function ensureDatabaseSchema() {
     const [rows]: any = await pool.query("SHOW TABLES LIKE 'users'");
     if (!rows || rows.length === 0) {
       console.log('--- Database empty, running initial schema migration ---');
-      const schemaPath = path.resolve(__dirname, 'db/schema.sql');
-      if (fs.existsSync(schemaPath)) {
+      const candidates = [
+        path.resolve(__dirname, 'db/schema.sql'),
+        path.resolve(__dirname, '../src/db/schema.sql'),
+        path.resolve(__dirname, '../../src/db/schema.sql'),
+        path.resolve(process.cwd(), 'src/db/schema.sql'),
+        path.resolve(process.cwd(), 'server/src/db/schema.sql'),
+        path.resolve(process.cwd(), 'dist/db/schema.sql'),
+      ];
+      const schemaPath = candidates.find((p) => fs.existsSync(p));
+      if (schemaPath) {
+        console.log(`Loading schema from: ${schemaPath}`);
         const sql = fs.readFileSync(schemaPath, 'utf8');
         await pool.query(sql);
-        console.log('--- Database schema created successfully ---');
+        console.log('--- Database schema created successfully from file ---');
+      } else {
+        console.error('schema.sql file not found in candidates:', candidates);
       }
     }
 
@@ -138,8 +140,8 @@ async function ensureDatabaseSchema() {
       const bcrypt = require('bcryptjs');
       const hash = await bcrypt.hash('Admin2026!', 10);
       await pool.query(
-        "INSERT INTO users (id, email, username, password, role, is_verified) VALUES (?, ?, ?, ?, 'admin', 1)",
-        ['admin-super-id', 'sebasruades8@gmail.com', 'Sebrudo09', hash]
+        "INSERT INTO users (username, email, password_hash, role, status) VALUES (?, ?, ?, 'admin', 'active')",
+        ['Sebrudo09', 'sebasruades8@gmail.com', hash]
       );
       console.log('--- Super Admin initialized: sebasruades8@gmail.com ---');
     }
