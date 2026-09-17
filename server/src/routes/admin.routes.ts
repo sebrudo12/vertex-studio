@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import {
   getAnalytics,
-  getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct,
+  getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, uploadProductScriptZip,
   getAdminUsers, handleAdminUserAction,
   getAdmins, addAdmin, demoteAdmin,
   getStaffRoles, createStaffRole, deleteStaffRole, updateAdminRole,
@@ -13,6 +13,7 @@ import {
   getAdminCoupons, createAdminCoupon, updateAdminCoupon, deleteAdminCoupon
 } from '../controllers/admin.controller';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { uploadScriptZip } from '../middleware/upload';
 
 const router = Router();
 router.use(authenticateToken, requireAdmin);
@@ -22,6 +23,7 @@ router.get('/analytics', getAnalytics);
 // Products
 router.get('/products', getAdminProducts);
 router.post('/products', createAdminProduct);
+router.post('/products/upload-zip', uploadScriptZip.single('file'), uploadProductScriptZip);
 router.put('/products/:id', updateAdminProduct);
 router.delete('/products/:id', deleteAdminProduct);
 

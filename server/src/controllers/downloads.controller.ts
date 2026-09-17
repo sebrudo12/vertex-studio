@@ -38,25 +38,53 @@ export async function downloadEscrowPackage(req: AuthRequest, res: Response): Pr
     const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
     const apiUrl = `${proto}://${host}`;
 
-    // Generate complete protected FiveM resource
-    const zipBuffer = generateEncryptedZip(
-      {
-        id: row.product_id,
-        title: row.title,
-        slug: row.slug,
-        version: row.version,
-        short_description: row.short_description
-      },
-      {
-        license_key: row.license_key,
-        bound_server_ip: row.bound_server_ip
-      },
-      {
-        username: row.username,
-        email: row.email
-      },
-      apiUrl
-    );
+    let zipBuffer: Buffer;
+    const uploadedPath = row.download_filename ? path.join(env.SCRIPTS_STORAGE_PATH, row.download_filename) : null;
+
+    if (uploadedPath && fs.existsSync(uploadedPath)) {
+      try {
+        const AdmZip = require('adm-zip');
+        const zip = new AdmZip(uploadedPath);
+        const configEntry = zip.getEntries().find((e: any) => e.entryName.toLowerCase().endsWith('config.lua'));
+        if (configEntry) {
+          let content = configEntry.getData().toString('utf8');
+          if (content.includes('Config.LicenseKey')) {
+            content = content.replace(/Config\.LicenseKey\s*=\s*['"][^'"]*['"]/, `Config.LicenseKey = "${row.license_key}"`);
+          } else {
+            content = `Config = Config or {}\nConfig.LicenseKey = "${row.license_key}" -- Inyectado por Vertex Keymaster\n` + content;
+          }
+          zip.updateFile(configEntry.entryName, Buffer.from(content, 'utf8'));
+        }
+        zipBuffer = zip.toBuffer();
+      } catch (err) {
+        zipBuffer = generateEncryptedZip(
+          { id: row.product_id, title: row.title, slug: row.slug, version: row.version, short_description: row.short_description },
+          { license_key: row.license_key, bound_server_ip: row.bound_server_ip },
+          { username: row.username, email: row.email },
+          apiUrl
+        );
+      }
+    } else {
+      // Generate complete protected FiveM resource
+      zipBuffer = generateEncryptedZip(
+        {
+          id: row.product_id,
+          title: row.title,
+          slug: row.slug,
+          version: row.version,
+          short_description: row.short_description
+        },
+        {
+          license_key: row.license_key,
+          bound_server_ip: row.bound_server_ip
+        },
+        {
+          username: row.username,
+          email: row.email
+        },
+        apiUrl
+      );
+    }
 
     // Audit log
     const clientIp = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1').toString().split(',')[0].trim();

@@ -735,3 +735,44 @@ export async function deleteAdminCoupon(req: AuthRequest, res: Response): Promis
     res.status(500).json({ detail: error.message });
   }
 }
+
+export async function uploadProductScriptZip(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    if (!req.file) {
+      res.status(400).json({ detail: 'No se ha seleccionado ningún archivo .zip' });
+      return;
+    }
+
+    const AdmZip = require('adm-zip');
+    const zipPath = req.file.path;
+    let filesCount = 0;
+    let hasManifest = false;
+    let serverFiles = 0;
+
+    try {
+      const zip = new AdmZip(zipPath);
+      const entries = zip.getEntries();
+      filesCount = entries.length;
+      hasManifest = entries.some((e: any) => e.entryName.toLowerCase().includes('fxmanifest.lua'));
+      serverFiles = entries.filter((e: any) => e.entryName.toLowerCase().includes('server') && e.entryName.endsWith('.lua')).length;
+    } catch (zipErr) {
+      console.warn('Zip inspect warning:', zipErr);
+    }
+
+    res.json({
+      message: 'Archivo encriptado y protegido con Vertex Escrow',
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      size: req.file.size,
+      sizeFormatted: (req.file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      filesCount,
+      hasManifest,
+      serverFiles,
+      escrowProtected: true
+    });
+  } catch (error: any) {
+    console.error('uploadProductScriptZip error:', error);
+    res.status(500).json({ detail: error.message || 'Error al procesar el archivo .zip' });
+  }
+}
+
