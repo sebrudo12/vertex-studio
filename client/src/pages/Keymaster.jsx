@@ -40,10 +40,6 @@ export default function Keymaster() {
   const [transferTarget, setTransferTarget] = useState("");
   const [transferring, setTransferring] = useState(false);
 
-  // Regenerate Key confirmation
-  const [regenLicense, setRegenLicense] = useState(null);
-  const [regenerating, setRegenerating] = useState(false);
-
   // Unlink Server confirmation
   const [serverToUnlink, setServerToUnlink] = useState(null);
   const [unlinking, setUnlinking] = useState(false);
@@ -140,22 +136,6 @@ export default function Keymaster() {
       toast.error(formatApiError(err.response?.data?.error || err.response?.data?.detail) || "Error al actualizar IP");
     } finally {
       setSavingIp(false);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (!regenLicense) return;
-    setRegenerating(true);
-    try {
-      await api.post(`/licenses/${regenLicense.id}/regenerate`);
-      toast.success("Nueva clave generada. Recuerda actualizar tu config.lua.");
-      setRegenLicense(null);
-      loadLicenses();
-      loadServers();
-    } catch (err) {
-      toast.error(formatApiError(err.response?.data?.detail) || "Error al regenerar clave");
-    } finally {
-      setRegenerating(false);
     }
   };
 
@@ -495,21 +475,12 @@ export default function Keymaster() {
 
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-3 px-1">
                         <span>Adquirido: {new Date(lic.created_at).toLocaleDateString()}</span>
-                        <div className="flex items-center gap-3">
-                          <button
-                            onClick={() => setRegenLicense(lic)}
-                            className="hover:text-amber-300 transition-colors"
-                          >
-                            Regenerar Clave
-                          </button>
-                          <span>·</span>
-                          <button
-                            onClick={() => setTransferLicense(lic)}
-                            className="hover:text-sky-300 transition-colors"
-                          >
-                            Transferir Activo
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => setTransferLicense(lic)}
+                          className="hover:text-sky-300 transition-colors"
+                        >
+                          Transferir Activo
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -839,27 +810,6 @@ export default function Keymaster() {
           <DialogFooter>
             <Button size="sm" onClick={() => setGuideLicense(null)} className="bg-white text-black hover:bg-white/90 font-semibold">
               Entendido
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal 3: Regenerar Clave */}
-      <Dialog open={Boolean(regenLicense)} onOpenChange={(open) => !open && setRegenLicense(null)}>
-        <DialogContent className="glass border-white/10 max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display flex items-center gap-2 text-amber-400">
-              <RefreshCw className="h-5 w-5" />
-              ¿Regenerar Clave de Licencia?
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Si tu clave actual ha sido expuesta o compartida, generar una nueva revocará inmediatamente la anterior en todos los servidores FiveM.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setRegenLicense(null)}>Cancelar</Button>
-            <Button disabled={regenerating} size="sm" onClick={handleRegenerate} className="bg-amber-400 text-black hover:bg-amber-300 font-semibold">
-              {regenerating ? "Regenerando..." : "Confirmar y Regenerar"}
             </Button>
           </DialogFooter>
         </DialogContent>
