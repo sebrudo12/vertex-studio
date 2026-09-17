@@ -145,8 +145,7 @@ async function ensureDatabaseSchema() {
       console.log('--- Super Admin initialized: sebasruades8@gmail.com ---');
     }
 
-    // Enforce correct roles: only sebasruades8 is super admin, kingsitonassir is customer
-    await pool.query("UPDATE users SET role = 'customer' WHERE email = 'kingsitonassir@gmail.com'");
+    // Ensure Super Admin has admin role
     await pool.query("UPDATE users SET role = 'admin' WHERE email = 'sebasruades8@gmail.com'");
 
     // Ensure coupons table exists
@@ -209,7 +208,10 @@ async function ensureDatabaseSchema() {
     }
 
     // Ensure Super Admin has 'Super Admin' as staff_role
-    await pool.query("UPDATE users SET staff_role = 'Super Admin' WHERE email = 'sebasruades8@gmail.com'");
+    await pool.query("UPDATE users SET staff_role = 'Super Admin', role = 'admin' WHERE email = 'sebasruades8@gmail.com'");
+
+    // Ensure all users with a staff role keep their admin permissions
+    await pool.query("UPDATE users SET role = 'admin' WHERE staff_role IS NOT NULL AND staff_role != '' AND staff_role != 'Cliente'");
 
     // Ensure Keymaster & Escrow columns exist
     try {

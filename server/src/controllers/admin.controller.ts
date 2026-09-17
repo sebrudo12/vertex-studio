@@ -222,7 +222,7 @@ export async function getStaffRoles(req: AuthRequest, res: Response): Promise<vo
       SELECT r.id, r.name, r.color, r.description, r.created_at,
              COUNT(u.id) as members_count
       FROM staff_roles r
-      LEFT JOIN users u ON u.staff_role = r.name AND u.role = 'admin'
+      LEFT JOIN users u ON u.staff_role = r.name AND (u.role = 'admin' OR (u.staff_role IS NOT NULL AND u.staff_role != '' AND u.staff_role != 'Cliente'))
       GROUP BY r.id
       ORDER BY r.id ASC
     `);
@@ -324,7 +324,7 @@ export async function getAdmins(req: AuthRequest, res: Response): Promise<void> 
              COALESCE(r.color, '#10b981') as role_color
       FROM users u
       LEFT JOIN staff_roles r ON r.name = u.staff_role
-      WHERE u.role = "admin"
+      WHERE u.role = "admin" OR (u.staff_role IS NOT NULL AND u.staff_role != '' AND u.staff_role != 'Cliente')
       ORDER BY (u.email = 'sebasruades8@gmail.com') DESC, u.created_at ASC
     `);
     res.json(admins);

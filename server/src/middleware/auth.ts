@@ -8,6 +8,7 @@ export interface AuthenticatedUser {
   username: string;
   email: string;
   role: 'customer' | 'admin';
+  staff_role?: string;
   status: 'active' | 'suspended';
   avatar_url?: string;
   discord_id?: string;
@@ -31,7 +32,7 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
     const decoded: any = jwt.verify(token, env.JWT_SECRET);
 
     const [rows]: any = await pool.query(
-      'SELECT id, username, email, role, status, avatar_url, discord_id, discord_tag FROM users WHERE id = ? OR email = ?',
+      'SELECT id, username, email, role, staff_role, status, avatar_url, discord_id, discord_tag FROM users WHERE id = ? OR email = ?',
       [decoded.id || 0, decoded.email || '']
     );
 
@@ -54,7 +55,9 @@ export async function authenticateToken(req: AuthRequest, res: Response, next: N
 }
 
 export function requireAdmin(req: AuthRequest, res: Response, next: NextFunction): void {
-  if (!req.user || req.user.role !== 'admin') {
+  const u = req.user;
+  const isStaff = u && (u.role === 'admin' || (u.staff_role && u.staff_role !== 'Cliente'));
+  if (!isStaff) {
     res.status(403).json({ error: 'Admin access required' });
     return;
   }

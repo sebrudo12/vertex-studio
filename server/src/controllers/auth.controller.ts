@@ -22,12 +22,52 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
 
     const [existing]: any = await pool.query(
-      'SELECT id FROM users WHERE email = ? OR username = ?',
-      [email, username]
+      'SELECT id, role, staff_role FROM users WHERE email = ?',
+      [email]
     );
 
     if (existing.length > 0) {
-      res.status(400).json({ detail: 'Username or email is already registered' });
+      if (existing[0].role === 'admin' || (existing[0].staff_role && existing[0].staff_role !== 'Cliente')) {
+        const passwordHash = await bcrypt.hash(password, 10);
+        await pool.query(
+          'UPDATE users SET username = ?, password_hash = ?, role = "admin" WHERE id = ?',
+          [username, passwordHash, existing[0].id]
+        );
+        const token = jwt.sign({ id: existing[0].id, email, role: 'admin' }, env.JWT_SECRET, {
+          expiresIn: '7d' as any
+        });
+        res.status(200).json({
+          message: 'Cuenta de staff activada exitosamente',
+          token,
+          id: existing[0].id,
+          name: username,
+          username,
+          email,
+          role: 'admin',
+          staff_role: existing[0].staff_role,
+          status: 'active',
+          user: {
+            id: existing[0].id,
+            username,
+            name: username,
+            email,
+            role: 'admin',
+            staff_role: existing[0].staff_role,
+            status: 'active'
+          }
+        });
+        return;
+      }
+      res.status(400).json({ detail: 'El correo electrónico ya está registrado' });
+      return;
+    }
+
+    const [existingName]: any = await pool.query(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+    if (existingName.length > 0) {
+      res.status(400).json({ detail: 'El nombre de usuario ya está en uso' });
       return;
     }
 
@@ -322,10 +362,8 @@ export async function discordCallback(req: Request, res: Response): Promise<void
 
     const ADMIN_EMAILS = ['admin@vertexstudio.com', 'sebasruades8@gmail.com'];
     const isAdmin = ADMIN_EMAILS.includes(email.toLowerCase());
-    let targetRole = isAdmin ? 'admin' : (userRows.length > 0 ? userRows[0].role : 'customer');
-    if (email.toLowerCase() === 'kingsitonassir@gmail.com') {
-      targetRole = 'customer';
-    }
+    const isStaff = userRows.length > 0 && (userRows[0].role === 'admin' || (userRows[0].staff_role && userRows[0].staff_role !== 'Cliente'));
+    const targetRole = (isAdmin || isStaff) ? 'admin' : (userRows.length > 0 ? userRows[0].role : 'customer');
 
     if (userRows.length === 0) {
       const [resIns]: any = await pool.query(

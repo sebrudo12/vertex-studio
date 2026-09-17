@@ -10,9 +10,12 @@ CREATE TABLE IF NOT EXISTS `users` (
   `email` VARCHAR(150) NOT NULL UNIQUE,
   `password_hash` VARCHAR(255) NULL,
   `role` ENUM('customer', 'admin') NOT NULL DEFAULT 'customer',
+  `staff_role` VARCHAR(50) NULL DEFAULT 'Administrador',
   `avatar_url` VARCHAR(500) NULL,
   `discord_id` VARCHAR(50) NULL UNIQUE,
   `discord_tag` VARCHAR(100) NULL,
+  `cfx_username` VARCHAR(100) NULL,
+  `cfx_avatar` VARCHAR(500) NULL,
   `status` ENUM('active', 'suspended') NOT NULL DEFAULT 'active',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -229,3 +232,44 @@ CREATE TABLE IF NOT EXISTS `coupons` (
   `expires_at` TIMESTAMP NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 17. STAFF ROLES
+CREATE TABLE IF NOT EXISTS `staff_roles` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(50) NOT NULL UNIQUE,
+  `color` VARCHAR(30) NOT NULL DEFAULT '#38bdf8',
+  `description` VARCHAR(255) NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 18. LICENSE SERVERS (FIVEM KEYMASTER TELEMETRY)
+CREATE TABLE IF NOT EXISTS `license_servers` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `license_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `product_id` INT UNSIGNED NOT NULL,
+  `server_name` VARCHAR(255) NOT NULL DEFAULT 'Servidor FiveM',
+  `server_ip` VARCHAR(100) NOT NULL,
+  `server_port` VARCHAR(20) NULL DEFAULT '30120',
+  `max_players` INT DEFAULT 32,
+  `game_build` VARCHAR(100) NULL,
+  `status` ENUM('online', 'offline', 'blocked') NOT NULL DEFAULT 'online',
+  `first_connected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `last_seen_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX `idx_license_servers_lic` (`license_id`),
+  INDEX `idx_license_servers_user` (`user_id`),
+  INDEX `idx_license_servers_ip` (`server_ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 19. ASSET TRANSFERS
+CREATE TABLE IF NOT EXISTS `asset_transfers` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `license_id` INT UNSIGNED NOT NULL,
+  `from_user_id` INT UNSIGNED NOT NULL,
+  `to_user_id` INT UNSIGNED NOT NULL,
+  `product_title` VARCHAR(150) NOT NULL,
+  `transferred_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_transfers_from` (`from_user_id`),
+  INDEX `idx_transfers_to` (`to_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
