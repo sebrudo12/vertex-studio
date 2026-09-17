@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, MessageCircle, Star, Zap, Shield, Package, Gauge } from "lucide-react";
+import { ArrowRight, MessageCircle, Star, Zap, Shield, Package, Gauge, ChevronLeft, ChevronRight, Sparkles, ArrowUpRight } from "lucide-react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { ProductCard } from "@/components/ProductCard";
@@ -19,6 +19,191 @@ function Counter({ value, label }) {
   );
 }
 
+function FeaturedHeroShowcase({ products }) {
+  const featured = (Array.isArray(products) ? products : []).filter((p) => p.featured);
+  const items = featured.length > 0 ? featured : (Array.isArray(products) && products.length > 0 ? products : [
+    {
+      id: "featured-mechanics",
+      slug: "vertex-mechanics",
+      title: "Vertex Mechanics",
+      name: "Vertex Mechanics",
+      short_description: "Advanced mechanic management system with tuning tablet, diagnostic scanners, and realistic repair minigames.",
+      price: 29.99,
+      category: "Scripts",
+      frameworks: ["QBCore", "ESX", "Qbox"],
+      version: "2.1.0",
+      featured: true,
+      image: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80"
+    }
+  ]);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    if (items.length <= 1 || isHovered) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % items.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [items.length, isHovered]);
+
+  const safeIndex = currentIndex % items.length;
+  const current = items[safeIndex] || items[0];
+
+  const handlePrev = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev - 1 + items.length) % items.length);
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev + 1) % items.length);
+  };
+
+  const free = Number(current.price) === 0;
+  const frameworks = Array.isArray(current.frameworks) ? current.frameworks : [];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.94 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.7, delay: 0.2 }}
+      className="relative group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Dynamic ambient backdrop glow */}
+      <div className="absolute -inset-6 bg-white/10 blur-3xl rounded-full pointer-events-none transition-all duration-700 group-hover:bg-white/15" />
+
+      {/* Main card */}
+      <div className="relative rounded-2xl border border-white/15 overflow-hidden glass shadow-2xl backdrop-blur-xl">
+        {/* Top Badges Bar */}
+        <div className="absolute top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/75 border border-amber-400/40 text-amber-300 text-[11px] font-mono font-semibold backdrop-blur-md shadow-lg">
+              <Sparkles className="h-3 w-3 fill-amber-400 text-amber-400" />
+              Destacado
+            </span>
+            <span className="text-[11px] font-mono uppercase tracking-wider px-2.5 py-1 rounded-full bg-black/75 border border-white/15 text-white/90 backdrop-blur-md shadow-lg">
+              {current.category || "Script"}
+            </span>
+          </div>
+
+          <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-black/75 border border-emerald-500/30 text-emerald-400 backdrop-blur-md shadow-lg flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            v{current.version || "1.0.0"}
+          </span>
+        </div>
+
+        {/* Product Image Link */}
+        <Link to={`/store/${current.slug}`} className="block relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden group/img">
+          <motion.img
+            key={current.slug || current.id}
+            src={current.image || current.thumbnail || HERO_UI}
+            alt={current.name || current.title}
+            initial={{ opacity: 0.8, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.35 }}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#09090d] via-[#09090d]/30 to-transparent" />
+        </Link>
+
+        {/* Carousel Arrows (if multiple products) */}
+        {items.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              type="button"
+              className="absolute left-3 top-1/3 -translate-y-1/2 z-30 h-9 w-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition-all opacity-80 hover:opacity-100 hover:scale-110 shadow-xl cursor-pointer"
+              aria-label="Producto anterior"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={handleNext}
+              type="button"
+              className="absolute right-3 top-1/3 -translate-y-1/2 z-30 h-9 w-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center backdrop-blur-md hover:bg-white hover:text-black transition-all opacity-80 hover:opacity-100 hover:scale-110 shadow-xl cursor-pointer"
+              aria-label="Siguiente producto"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </>
+        )}
+
+        {/* Details & Action Panel */}
+        <div className="p-5 sm:p-6 bg-gradient-to-b from-[#0e0e14]/95 to-[#08080c]/98 border-t border-white/10 backdrop-blur-2xl">
+          {/* Framework tags */}
+          {frameworks.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2.5">
+              {frameworks.slice(0, 4).map((fw) => (
+                <span
+                  key={fw}
+                  className="text-[10px] font-mono px-2 py-0.5 rounded border border-white/10 bg-white/5 text-slate-300"
+                >
+                  {fw}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <Link to={`/store/${current.slug}`} className="hover:text-primary transition-colors">
+              <h3 className="font-display font-bold text-lg sm:text-xl text-white tracking-tight line-clamp-1">
+                {current.name || current.title}
+              </h3>
+            </Link>
+            <p className="mt-1 text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {current.short_description}
+            </p>
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Precio</span>
+              <span className="font-display font-black text-xl sm:text-2xl text-white">
+                {free ? "Gratis" : `€${Number(current.price).toFixed(2)}`}
+              </span>
+            </div>
+
+            <Button
+              asChild
+              size="default"
+              className="bg-white text-black hover:bg-white/90 font-semibold group/btn px-5 shadow-lg"
+            >
+              <Link to={`/store/${current.slug}`}>
+                Ver Producto
+                <ArrowUpRight className="h-4 w-4 ml-1.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+              </Link>
+            </Button>
+          </div>
+
+          {/* Dots Indicator */}
+          {items.length > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-1.5">
+              {items.map((item, i) => (
+                <button
+                  key={item.id || item.slug || i}
+                  type="button"
+                  onClick={() => setCurrentIndex(i)}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === safeIndex ? "w-6 bg-white" : "w-2 bg-white/25 hover:bg-white/50"
+                  }`}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Home() {
   const { settings } = useAuth();
   const [products, setProducts] = useState([]);
@@ -29,7 +214,7 @@ export default function Home() {
 
   useEffect(() => {
     api.get("/products")
-      .then((r) => setProducts(Array.isArray(r.data) ? r.data.slice(0, 6) : []))
+      .then((r) => setProducts(Array.isArray(r.data) ? r.data : []))
       .catch(() => setProducts([]));
     api.get("/reviews")
       .then((r) => setReviews(Array.isArray(r.data) ? r.data.slice(0, 3) : []))
@@ -79,23 +264,7 @@ export default function Home() {
               </motion.div>
             </div>
 
-            <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.7, delay: 0.2 }}
-              className="relative">
-              <div className="absolute -inset-6 bg-white/5 blur-3xl rounded-full" />
-              <div className="relative rounded-2xl border border-white/10 overflow-hidden glass animate-floaty">
-                <img src={HERO_UI} alt="Vertex UI preview" className="w-full aspect-[4/3] object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent" />
-                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between glass rounded-xl px-4 py-3">
-                  <div>
-                    <div className="font-display text-sm font-bold text-white">Vertex Mechanics</div>
-                    <div className="text-[11px] text-muted-foreground font-mono">NUI · Optimized · v2.1.0</div>
-                  </div>
-                  <span className="text-xs font-mono text-emerald-300 flex items-center gap-1">
-                    <Gauge className="h-3.5 w-3.5" /> 0.02ms
-                  </span>
-                </div>
-              </div>
-            </motion.div>
+            <FeaturedHeroShowcase products={products} />
           </div>
         </div>
       </section>
@@ -138,7 +307,7 @@ export default function Home() {
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(Array.isArray(products) ? products : []).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+          {(Array.isArray(products) ? products : []).slice(0, 6).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
         </div>
       </section>
 
