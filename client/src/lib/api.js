@@ -9,7 +9,9 @@ export const API = rawBackend
 const api = axios.create({ baseURL: API });
 
 api.interceptors.request.use((config) => {
-  const token = typeof window !== "undefined" ? localStorage.getItem("vx_token") : null;
+  const token = typeof window !== "undefined" 
+    ? (localStorage.getItem("vx_token") || localStorage.getItem("vertex_token")) 
+    : null;
   if (token) {
     if (config.headers && typeof config.headers.set === "function") {
       config.headers.set("Authorization", `Bearer ${token}`);

@@ -13,7 +13,9 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('vertex_token');
+  const token = typeof window !== 'undefined' 
+    ? (localStorage.getItem('vertex_token') || localStorage.getItem('vx_token'))
+    : null;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -22,15 +24,7 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // If unauthorized and not on login page, remove expired token
-      if (!window.location.pathname.includes('/login')) {
-        localStorage.removeItem('vertex_token');
-      }
-    }
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default api;

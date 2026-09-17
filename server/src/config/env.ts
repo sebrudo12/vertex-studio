@@ -14,8 +14,8 @@ export const env = {
   DB_PASSWORD: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || '',
   DB_NAME: process.env.DB_NAME || process.env.MYSQLDATABASE || 'vertex_studio',
 
-  JWT_SECRET: process.env.JWT_SECRET || 'vertex_studio_secret_jwt_2026',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  JWT_SECRET: process.env.JWT_SECRET || 'vertex_studio_super_secret_jwt_key_2026_fivem_dev_platform',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '365d',
 
   DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID || '',
   DISCORD_CLIENT_SECRET: process.env.DISCORD_CLIENT_SECRET || '',

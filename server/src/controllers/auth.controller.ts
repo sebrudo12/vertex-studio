@@ -34,7 +34,7 @@ export async function register(req: Request, res: Response): Promise<void> {
           [username, passwordHash, existing[0].id]
         );
         const token = jwt.sign({ id: existing[0].id, email, role: 'admin' }, env.JWT_SECRET, {
-          expiresIn: '7d' as any
+          expiresIn: (env.JWT_EXPIRES_IN || '365d') as any
         });
         res.status(200).json({
           message: 'Cuenta de staff activada exitosamente',
@@ -84,7 +84,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     const userId = result.insertId;
     const token = jwt.sign({ id: userId, email, role: assignedRole }, env.JWT_SECRET, {
-      expiresIn: '7d' as any
+      expiresIn: (env.JWT_EXPIRES_IN || '365d') as any
     });
 
     res.status(201).json({
@@ -154,7 +154,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
 
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET, {
-      expiresIn: '7d' as any
+      expiresIn: (env.JWT_EXPIRES_IN || '365d') as any
     });
 
     res.json({
@@ -191,7 +191,13 @@ export async function me(req: AuthRequest, res: Response): Promise<void> {
     return;
   }
   const u: any = req.user;
+  const refreshedToken = jwt.sign(
+    { id: u.id, email: u.email, role: u.role },
+    env.JWT_SECRET,
+    { expiresIn: (env.JWT_EXPIRES_IN || '365d') as any }
+  );
   res.json({
+    token: refreshedToken,
     id: u.id,
     email: u.email,
     name: u.username,
@@ -286,7 +292,7 @@ export async function getDiscordAuthUrl(req: Request, res: Response): Promise<vo
         user = userRows[0];
       }
 
-      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET, { expiresIn: '7d' as any });
+      const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, env.JWT_SECRET, { expiresIn: (env.JWT_EXPIRES_IN || '365d') as any });
       res.json({
         url: `${env.CLIENT_URL}/auth/discord?token=${token}`,
         configured: false
@@ -320,7 +326,7 @@ export async function discordCallback(req: Request, res: Response): Promise<void
     }
 
     if (!env.DISCORD_CLIENT_ID || !env.DISCORD_CLIENT_SECRET) {
-      const mockToken = jwt.sign({ id: 2, email: 'customer@vertexstudio.com', role: 'customer' }, env.JWT_SECRET, { expiresIn: '7d' as any });
+      const mockToken = jwt.sign({ id: 2, email: 'customer@vertexstudio.com', role: 'customer' }, env.JWT_SECRET, { expiresIn: (env.JWT_EXPIRES_IN || '365d') as any });
       if (req.method === 'GET') {
         res.redirect(`${env.CLIENT_URL}/auth/discord?token=${mockToken}`);
         return;
@@ -390,7 +396,7 @@ export async function discordCallback(req: Request, res: Response): Promise<void
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       env.JWT_SECRET,
-      { expiresIn: '7d' as any }
+      { expiresIn: (env.JWT_EXPIRES_IN || '365d') as any }
     );
 
     if (req.method === 'GET') {

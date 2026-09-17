@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api, { formatApiError } from "@/lib/api";
@@ -10,10 +10,16 @@ import { Label } from "@/components/ui/label";
 
 export default function Register() {
   const nav = useNavigate();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  useEffect(() => {
+    if (user) {
+      nav(user.role === "admin" ? "/admin" : "/dashboard", { replace: true });
+    }
+  }, [user, nav]);
 
   const submit = async (e) => {
     e.preventDefault();

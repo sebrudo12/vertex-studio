@@ -39,16 +39,24 @@ export function AuthShell({ title, subtitle, children }) {
 
 export default function Login() {
   const nav = useNavigate();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  // If user is already authenticated, redirect straight to their dashboard or admin panel
+  useEffect(() => {
+    if (user) {
+      nav(user.role === "admin" ? "/admin" : "/dashboard", { replace: true });
+    }
+  }, [user, nav]);
 
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const { data } = await api.post("/auth/login", { email, password, remember: rememberMe });
       login(data);
       toast.success("Welcome back");
       nav(data.role === "admin" ? "/admin" : "/dashboard");
@@ -71,6 +79,19 @@ export default function Login() {
           </div>
           <Input data-testid="login-password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 bg-card border-white/10" />
         </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground hover:text-white transition-colors">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30 h-3.5 w-3.5"
+            />
+            <span>Mantener sesión iniciada (permanente)</span>
+          </label>
+        </div>
+
         <Button type="submit" disabled={loading} data-testid="login-submit" className="w-full h-11 bg-white text-black hover:bg-white/90 font-semibold">
           {loading ? "Signing in..." : "Sign In"}
         </Button>

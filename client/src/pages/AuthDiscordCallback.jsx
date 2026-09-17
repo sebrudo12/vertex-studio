@@ -28,6 +28,7 @@ export default function AuthDiscordCallback() {
     const avatar = params.get("avatar") || "";
 
     localStorage.setItem("vx_token", token);
+    localStorage.setItem("vertex_token", token);
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
     const initialUser = { name, username: name, role, email, avatar };
