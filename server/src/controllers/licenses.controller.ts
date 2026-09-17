@@ -85,9 +85,74 @@ export async function transferLicenseController(req: AuthRequest, res: Response)
   }
 }
 
+export async function getMyServers(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const [servers]: any = await pool.query(`
+      SELECT s.*, p.title as product_title, p.slug as product_slug, p.thumbnail as product_image,
+             l.license_key
+      FROM license_servers s
+      JOIN products p ON s.product_id = p.id
+      JOIN licenses l ON s.license_id = l.id
+      WHERE s.user_id = ?
+      ORDER BY s.last_seen_at DESC
+    `, [userId]);
+
+    res.json({ servers });
+  } catch (error: any) {
+    console.error('getMyServers error:', error);
+    res.status(500).json({ error: 'Error al obtener servidores conectados' });
+  }
+}
+
+export async function unlinkServer(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    const [sRows]: any = await pool.query(
+      'SELECT * FROM license_servers WHERE id = ? AND (user_id = ? OR ? = "admin")',
+      [id, userId, req.user?.role]
+    );
+
+    if (sRows.length === 0) {
+      res.status(404).json({ error: 'Servidor no encontrado o no autorizado' });
+      return;
+    }
+
+    const srv = sRows[0];
+    await pool.query('DELETE FROM license_servers WHERE id = ?', [srv.id]);
+    await pool.query('UPDATE licenses SET bound_server_ip = NULL WHERE id = ?', [srv.license_id]);
+
+    res.json({ message: 'Servidor desvinculado exitosamente. La IP de la licencia ha quedado liberada para un nuevo servidor.' });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Error al desvincular servidor' });
+  }
+}
+
+export async function getMyTransfers(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const [transfers]: any = await pool.query(`
+      SELECT t.*, 
+             u_from.username as from_username, u_from.email as from_email,
+             u_to.username as to_username, u_to.email as to_email
+      FROM asset_transfers t
+      JOIN users u_from ON t.from_user_id = u_from.id
+      JOIN users u_to ON t.to_user_id = u_to.id
+      WHERE t.from_user_id = ? OR t.to_user_id = ?
+      ORDER BY t.transferred_at DESC
+    `, [userId, userId]);
+
+    res.json({ transfers });
+  } catch (error: any) {
+    res.status(500).json({ error: 'Error al obtener transferencias' });
+  }
+}
+
 export async function verifyLicenseFiveM(req: Request, res: Response): Promise<void> {
   try {
-    const { license_key, server_ip } = req.body;
+    const { license_key, server_ip, server_name, server_port, max_players, game_build } = req.body;
 
     if (!license_key) {
       res.status(400).json({ valid: false, message: 'Falta el parámetro license_key' });
@@ -102,7 +167,12 @@ export async function verifyLicenseFiveM(req: Request, res: Response): Promise<v
       '127.0.0.1'
     ).toString().split(',')[0].trim();
 
-    const result = await verifyLicenseKey(license_key.trim(), requestIp);
+    const result = await verifyLicenseKey(license_key.trim(), requestIp, {
+      server_name: server_name ? String(server_name).slice(0, 255) : undefined,
+      server_port: server_port ? String(server_port).slice(0, 20) : undefined,
+      max_players: max_players ? parseInt(max_players, 10) : undefined,
+      game_build: game_build ? String(game_build).slice(0, 100) : undefined
+    });
 
     if (!result.valid) {
       res.status(403).json(result);

@@ -245,6 +245,41 @@ async function ensureDatabaseSchema() {
     try {
       await pool.query("ALTER TABLE users ADD COLUMN cfx_avatar VARCHAR(500) NULL");
     } catch (err) {}
+
+    // Ensure license_servers table exists for Keymaster server tracking
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS license_servers (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        license_id INT UNSIGNED NOT NULL,
+        user_id INT UNSIGNED NOT NULL,
+        product_id INT UNSIGNED NOT NULL,
+        server_name VARCHAR(255) NOT NULL DEFAULT 'Servidor FiveM',
+        server_ip VARCHAR(100) NOT NULL,
+        server_port VARCHAR(20) NULL DEFAULT '30120',
+        max_players INT DEFAULT 32,
+        game_build VARCHAR(100) NULL,
+        status ENUM('online', 'offline', 'blocked') NOT NULL DEFAULT 'online',
+        first_connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_license_servers_lic (license_id),
+        INDEX idx_license_servers_user (user_id),
+        INDEX idx_license_servers_ip (server_ip)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Ensure asset_transfers table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS asset_transfers (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        license_id INT UNSIGNED NOT NULL,
+        from_user_id INT UNSIGNED NOT NULL,
+        to_user_id INT UNSIGNED NOT NULL,
+        product_title VARCHAR(150) NOT NULL,
+        transferred_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_transfers_from (from_user_id),
+        INDEX idx_transfers_to (to_user_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
   } catch (err) {
     console.error('Database schema auto-check error:', err);
   }

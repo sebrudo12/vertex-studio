@@ -21,7 +21,14 @@ function cleanIp(ip: string): string {
   return cleaned;
 }
 
-export async function verifyLicenseKey(licenseKey: string, requestIp: string) {
+export interface ServerMeta {
+  server_name?: string;
+  server_port?: string;
+  max_players?: number;
+  game_build?: string;
+}
+
+export async function verifyLicenseKey(licenseKey: string, requestIp: string, meta?: ServerMeta) {
   const cleanedReqIp = cleanIp(requestIp);
 
   const [rows]: any = await pool.query(
@@ -67,6 +74,36 @@ export async function verifyLicenseKey(licenseKey: string, requestIp: string) {
     };
   }
 
+  // Record or update server heartbeat in license_servers
+  try {
+    const sName = meta?.server_name || (isLocalhost ? 'Servidor Local (Desarrollo)' : 'Servidor FiveM');
+    const sPort = meta?.server_port || '30120';
+    const maxP = meta?.max_players || 32;
+    const gBuild = meta?.game_build || 'FiveM';
+
+    const [srvRows]: any = await pool.query(
+      'SELECT id FROM license_servers WHERE license_id = ? AND server_ip = ?',
+      [lic.id, cleanedReqIp]
+    );
+
+    if (srvRows.length > 0) {
+      await pool.query(
+        `UPDATE license_servers
+         SET server_name = ?, server_port = ?, max_players = ?, game_build = ?, status = 'online', last_seen_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [sName, sPort, maxP, gBuild, srvRows[0].id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO license_servers (license_id, user_id, product_id, server_name, server_ip, server_port, max_players, game_build, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'online')`,
+        [lic.id, lic.user_id, lic.product_id, sName, cleanedReqIp, sPort, maxP, gBuild]
+      );
+    }
+  } catch (srvErr) {
+    console.warn('Error recording license server heartbeat:', srvErr);
+  }
+
   return {
     valid: true,
     license: {
@@ -92,10 +129,24 @@ export async function regenerateLicense(licenseId: number, userId: number, isAdm
   if (res.affectedRows === 0) {
     throw new Error('Licencia no encontrada o no autorizada');
   }
+
+  // Clear connected servers for this license on regeneration
+  await pool.query('DELETE FROM license_servers WHERE license_id = ?', [licenseId]);
+
   return newKey;
 }
 
 export async function transferLicense(licenseId: number, fromUserId: number, targetUserQuery: string, isAdmin = false) {
+  // Find license
+  const [licRows]: any = await pool.query(
+    'SELECT l.*, p.title as product_title FROM licenses l JOIN products p ON l.product_id = p.id WHERE l.id = ?',
+    [licenseId]
+  );
+  if (licRows.length === 0) {
+    throw new Error('Licencia no encontrada');
+  }
+  const lic = licRows[0];
+
   // Find target user
   const [targetRows]: any = await pool.query(
     'SELECT id, username, email FROM users WHERE (email = ? OR username = ?) AND status = "active"',
@@ -123,6 +174,15 @@ export async function transferLicense(licenseId: number, fromUserId: number, tar
   if (res.affectedRows === 0) {
     throw new Error('Licencia no encontrada o no autorizada');
   }
+
+  // Record in asset_transfers
+  await pool.query(
+    'INSERT INTO asset_transfers (license_id, from_user_id, to_user_id, product_title) VALUES (?, ?, ?, ?)',
+    [licenseId, fromUserId, targetUser.id, lic.product_title || 'Recurso FiveM']
+  );
+
+  // Clear server activations from previous owner
+  await pool.query('DELETE FROM license_servers WHERE license_id = ?', [licenseId]);
 
   return {
     success: true,

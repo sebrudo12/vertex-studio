@@ -55,13 +55,17 @@ local _0xVTX_OWNER = "${meta.ownerUsername}"
 local function _0xVTX_VERIFY()
     local p = promise.new()
     local endpoint = _0xVTX_API .. "/api/licenses/verify"
+    local _sName = GetConvar("sv_hostname", "Servidor FiveM")
+    local _sPort = GetConvar("netPort", "30120")
+    local _maxP = GetConvarInt("sv_maxclients", 32)
+    local _gBuild = GetConvar("version", "FiveM")
     
     PerformHttpRequest(endpoint, function(statusCode, responseText, headers)
         if statusCode == 200 then
             local data = json.decode(responseText)
             if data and data.valid then
                 print("^2[Vertex Keymaster] ✓ Licencia verificada: " .. _0xVTX_PRODUCT .. " (" .. _0xVTX_KEY .. ")^7")
-                print("^2[Vertex Keymaster] ✓ Propietario autorizado: @" .. _0xVTX_OWNER .. "^7")
+                print("^2[Vertex Keymaster] ✓ Servidor registrado en tu Vertex Keymaster: " .. _sName .. "^7")
                 p:resolve(true)
             else
                 local reason = (data and data.message) or "Licencia no autorizada para este servidor."
@@ -76,7 +80,11 @@ local function _0xVTX_VERIFY()
     end, "POST", json.encode({
         license_key = _0xVTX_KEY,
         product = _0xVTX_PRODUCT,
-        owner = _0xVTX_OWNER
+        owner = _0xVTX_OWNER,
+        server_name = _sName,
+        server_port = _sPort,
+        max_players = _maxP,
+        game_build = _gBuild
     }), { ["Content-Type"] = "application/json" })
 
     return Citizen.Await(p)
