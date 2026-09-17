@@ -1,7 +1,9 @@
 import { Response } from 'express';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
 import { pool } from '../config/db';
 import { AuthRequest } from '../middleware/auth';
+import { processAndProtectZip } from '../services/escrowService';
 
 // GET /api/admin/analytics
 export async function getAnalytics(req: AuthRequest, res: Response): Promise<void> {
@@ -743,32 +745,43 @@ export async function uploadProductScriptZip(req: AuthRequest, res: Response): P
       return;
     }
 
-    const AdmZip = require('adm-zip');
     const zipPath = req.file.path;
-    let filesCount = 0;
-    let hasManifest = false;
-    let serverFiles = 0;
+    const rawBuffer = fs.readFileSync(zipPath);
 
-    try {
-      const zip = new AdmZip(zipPath);
-      const entries = zip.getEntries();
-      filesCount = entries.length;
-      hasManifest = entries.some((e: any) => e.entryName.toLowerCase().includes('fxmanifest.lua'));
-      serverFiles = entries.filter((e: any) => e.entryName.toLowerCase().includes('server') && e.entryName.endsWith('.lua')).length;
-    } catch (zipErr) {
-      console.warn('Zip inspect warning:', zipErr);
-    }
+    const baseRawName = req.file.originalname.replace(/\.zip$/i, '');
+    const cleanTitle = baseRawName.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+    const cleanSlug = baseRawName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+    const masterMeta = {
+      licenseKey: 'VTX-MASTER-PROTECTED',
+      productTitle: cleanTitle || 'Vertex FiveM Resource',
+      productSlug: cleanSlug || 'vertex-resource',
+      version: '1.0.0',
+      ownerUsername: 'Vertex Studio',
+      ownerEmail: 'admin@vertexstudio.com'
+    };
+
+    // Protect server Lua scripts, NUI app.js, NUI style.css, while keeping config.lua & locales open
+    const { buffer: protectedBuffer, report } = processAndProtectZip(rawBuffer, masterMeta);
+
+    // Overwrite the file on disk with the escrow-protected package
+    fs.writeFileSync(zipPath, protectedBuffer);
 
     res.json({
-      message: 'Archivo encriptado y protegido con Vertex Escrow',
+      message: '¡Script encriptado y protegido exitosamente con Vertex Escrow!',
       filename: req.file.filename,
       originalName: req.file.originalname,
-      size: req.file.size,
-      sizeFormatted: (req.file.size / (1024 * 1024)).toFixed(2) + ' MB',
-      filesCount,
-      hasManifest,
-      serverFiles,
-      escrowProtected: true
+      size: protectedBuffer.length,
+      sizeFormatted: (protectedBuffer.length / (1024 * 1024)).toFixed(2) + ' MB',
+      report,
+      filesCount: report.totalFiles,
+      serverFiles: report.encryptedLua.length,
+      jsFiles: report.encryptedJs.length,
+      cssFiles: report.encryptedCss.length,
+      editableFiles: report.editableFiles.length,
+      escrowProtected: true,
+      detectedTitle: cleanTitle,
+      detectedSlug: cleanSlug
     });
   } catch (error: any) {
     console.error('uploadProductScriptZip error:', error);

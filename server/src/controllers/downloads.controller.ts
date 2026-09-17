@@ -4,7 +4,7 @@ import fs from 'fs';
 import { pool } from '../config/db';
 import { AuthRequest } from '../middleware/auth';
 import { env } from '../config/env';
-import { generateEncryptedZip } from '../services/escrowService';
+import { generateEncryptedZip, processAndProtectZip } from '../services/escrowService';
 
 export async function downloadEscrowPackage(req: AuthRequest, res: Response): Promise<void> {
   try {
@@ -43,19 +43,19 @@ export async function downloadEscrowPackage(req: AuthRequest, res: Response): Pr
 
     if (uploadedPath && fs.existsSync(uploadedPath)) {
       try {
-        const AdmZip = require('adm-zip');
-        const zip = new AdmZip(uploadedPath);
-        const configEntry = zip.getEntries().find((e: any) => e.entryName.toLowerCase().endsWith('config.lua'));
-        if (configEntry) {
-          let content = configEntry.getData().toString('utf8');
-          if (content.includes('Config.LicenseKey')) {
-            content = content.replace(/Config\.LicenseKey\s*=\s*['"][^'"]*['"]/, `Config.LicenseKey = "${row.license_key}"`);
-          } else {
-            content = `Config = Config or {}\nConfig.LicenseKey = "${row.license_key}" -- Inyectado por Vertex Keymaster\n` + content;
-          }
-          zip.updateFile(configEntry.entryName, Buffer.from(content, 'utf8'));
-        }
-        zipBuffer = zip.toBuffer();
+        const rawBuffer = fs.readFileSync(uploadedPath);
+        const buyerMeta = {
+          licenseKey: row.license_key,
+          productTitle: row.title,
+          productSlug: row.slug,
+          version: row.version || '1.0.0',
+          ownerUsername: row.username,
+          ownerEmail: row.email,
+          apiUrl,
+          boundIp: row.bound_server_ip || undefined
+        };
+        const { buffer: buyerZip } = processAndProtectZip(rawBuffer, buyerMeta);
+        zipBuffer = buyerZip;
       } catch (err) {
         zipBuffer = generateEncryptedZip(
           { id: row.product_id, title: row.title, slug: row.slug, version: row.version, short_description: row.short_description },
