@@ -7,7 +7,7 @@ const LINKS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/dashboard/products", label: "My Products", icon: Package },
   { to: "/dashboard/downloads", label: "Downloads", icon: Download },
-  { to: "/dashboard/licenses", label: "Licenses", icon: Key },
+  { to: "/dashboard/licenses", label: "Keymaster (Assets)", icon: Key },
   { to: "/dashboard/orders", label: "Orders", icon: Receipt },
   { to: "/dashboard/invoices", label: "Invoices", icon: FileText },
   { to: "/dashboard/support", label: "Support", icon: LifeBuoy },

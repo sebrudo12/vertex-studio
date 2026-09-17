@@ -74,8 +74,10 @@ router.get('/licenses', async (req: AuthRequest, res: Response): Promise<void> =
   try {
     const userId = req.user?.id;
     const [licenses]: any = await pool.query(`
-      SELECT l.id, l.license_key as \`key\`, l.status, l.created_at, l.expires_at as expires,
-             p.title as product_name, p.slug, p.thumbnail as image
+      SELECT l.id, l.license_key as \`key\`, l.status, l.bound_server_ip, l.download_count,
+             l.created_at, l.expires_at as expires,
+             p.id as product_id, p.title as product_name, p.slug, p.thumbnail as image,
+             p.version, p.category, p.frameworks, p.short_description
       FROM licenses l
       JOIN products p ON l.product_id = p.id
       WHERE l.user_id = ?
@@ -84,7 +86,8 @@ router.get('/licenses', async (req: AuthRequest, res: Response): Promise<void> =
 
     res.json(licenses.map((l: any) => ({
       ...l,
-      status: l.status.charAt(0).toUpperCase() + l.status.slice(1)
+      status: l.status.charAt(0).toUpperCase() + l.status.slice(1),
+      frameworks: typeof l.frameworks === 'string' ? JSON.parse(l.frameworks || '[]') : (l.frameworks || [])
     })));
   } catch (error: any) {
     console.error('me licenses error:', error);

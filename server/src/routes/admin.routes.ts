@@ -6,7 +6,7 @@ import {
   getAdmins, addAdmin, demoteAdmin,
   getStaffRoles, createStaffRole, deleteStaffRole, updateAdminRole,
   getAdminOrders,
-  getAdminLicenses, handleAdminLicenseAction,
+  getAdminLicenses, handleAdminLicenseAction, createAdminLicense, encryptAdminLua,
   getAdminTickets, updateAdminTicketStatus,
   getAdminReviews, approveAdminReview, deleteAdminReview,
   updateAdminSettings,
@@ -46,7 +46,11 @@ router.get('/orders', getAdminOrders);
 
 // Licenses
 router.get('/licenses', getAdminLicenses);
+router.post('/licenses', createAdminLicense);
 router.post('/licenses/:id/:action', handleAdminLicenseAction);
+
+// Escrow Encryption Studio
+router.post('/escrow/encrypt', encryptAdminLua);
 
 // Tickets
 router.get('/tickets', getAdminTickets);

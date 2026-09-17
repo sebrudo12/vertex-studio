@@ -34,9 +34,16 @@ export default function Success() {
         </div>
       </div>
 
-      <div className="mt-6 flex gap-3 justify-center">
-        <Button asChild className="bg-white text-black hover:bg-white/90 font-semibold" data-testid="success-downloads"><Link to="/dashboard/downloads"><Download className="h-4 w-4 mr-2" /> Go to Downloads</Link></Button>
-        <Button asChild variant="outline" className="border-white/15 hover:bg-white/5"><Link to="/store">Continue Shopping</Link></Button>
+      <div className="mt-6 flex flex-wrap gap-3 justify-center">
+        <Button asChild className="bg-white text-black hover:bg-white/90 font-semibold" data-testid="success-keymaster">
+          <Link to="/keymaster"><Key className="h-4 w-4 mr-2 text-black" /> Abrir Vertex Keymaster</Link>
+        </Button>
+        <Button asChild variant="outline" className="border-white/15 hover:bg-white/5" data-testid="success-downloads">
+          <Link to="/dashboard/downloads"><Download className="h-4 w-4 mr-2" /> Mis Descargas</Link>
+        </Button>
+        <Button asChild variant="ghost" className="text-muted-foreground hover:text-white">
+          <Link to="/store">Seguir Comprando</Link>
+        </Button>
       </div>
     </div>
   );

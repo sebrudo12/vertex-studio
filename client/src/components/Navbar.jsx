@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, Menu, X, LayoutDashboard, LogOut, Shield, User } from "lucide-react";
+import { ShoppingCart, Menu, X, LayoutDashboard, LogOut, Shield, User, Key } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { VertexLogo } from "@/components/VertexLogo";
@@ -13,6 +13,7 @@ import {
 const LINKS = [
   { to: "/", label: "Home" },
   { to: "/store", label: "Store" },
+  { to: "/keymaster", label: "Keymaster" },
   { to: "/documentation", label: "Documentation" },
   { to: "/changelog", label: "Changelog" },
   { to: "/support", label: "Support" },
@@ -73,6 +74,9 @@ export function Navbar() {
               <DropdownMenuContent align="end" className="w-52 glass border-white/10">
                 <DropdownMenuItem data-testid="menu-dashboard" onClick={() => nav("/dashboard")} className="cursor-pointer">
                   <LayoutDashboard className="h-4 w-4 mr-2" /> Dashboard
+                </DropdownMenuItem>
+                <DropdownMenuItem data-testid="menu-keymaster" onClick={() => nav("/keymaster")} className="cursor-pointer">
+                  <Key className="h-4 w-4 mr-2 text-emerald-400" /> Vertex Keymaster
                 </DropdownMenuItem>
                 {user.role === "admin" && (
                   <DropdownMenuItem data-testid="menu-admin" onClick={() => nav("/admin")} className="cursor-pointer">

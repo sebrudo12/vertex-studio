@@ -20,6 +20,7 @@ import Support from "@/pages/Support";
 import Checkout from "@/pages/Checkout";
 import Success from "@/pages/Success";
 import AuthDiscordCallback from "@/pages/AuthDiscordCallback";
+import Keymaster from "@/pages/Keymaster";
 
 import DashboardLayout from "@/pages/dashboard/DashboardLayout";
 import Overview from "@/pages/dashboard/Overview";
@@ -43,6 +44,7 @@ import AdminTickets from "@/pages/admin/AdminTickets";
 import AdminReviews from "@/pages/admin/AdminReviews";
 import AdminAnalytics from "@/pages/admin/AdminAnalytics";
 import AdminSettings from "@/pages/admin/AdminSettings";
+import AdminEscrow from "@/pages/admin/AdminEscrow";
 
 function PublicLayout() {
   const loc = useLocation();
@@ -88,6 +90,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/success" element={<Success />} />
+              <Route path="/keymaster" element={<ProtectedRoute><Keymaster /></ProtectedRoute>} />
             </Route>
 
             <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -109,6 +112,7 @@ function App() {
               <Route path="orders" element={<AdminOrders />} />
               <Route path="coupons" element={<AdminCoupons />} />
               <Route path="licenses" element={<AdminLicenses />} />
+              <Route path="escrow" element={<AdminEscrow />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="reviews" element={<AdminReviews />} />
               <Route path="analytics" element={<AdminAnalytics />} />

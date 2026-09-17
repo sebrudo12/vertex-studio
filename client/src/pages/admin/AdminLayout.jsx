@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Package, Users, ShieldCheck, Receipt, Tag, Key, Ticket, Star, BarChart3, Settings, LogOut, Home } from "lucide-react";
+import { LayoutDashboard, Package, Users, ShieldCheck, Receipt, Tag, Key, Ticket, Star, BarChart3, Settings, LogOut, Home, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { VertexLogo } from "@/components/VertexLogo";
 
@@ -11,6 +11,7 @@ const LINKS = [
   { to: "/admin/orders", label: "Orders", icon: Receipt },
   { to: "/admin/coupons", label: "Coupons", icon: Tag },
   { to: "/admin/licenses", label: "Licenses", icon: Key },
+  { to: "/admin/escrow", label: "Escrow Studio", icon: Lock },
   { to: "/admin/tickets", label: "Tickets", icon: Ticket },
   { to: "/admin/reviews", label: "Reviews", icon: Star },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },

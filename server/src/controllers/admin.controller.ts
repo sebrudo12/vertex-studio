@@ -423,8 +423,9 @@ export async function getAdminOrders(req: AuthRequest, res: Response): Promise<v
 export async function getAdminLicenses(req: AuthRequest, res: Response): Promise<void> {
   try {
     const [licenses]: any = await pool.query(`
-      SELECT l.id, l.license_key as \`key\`, l.status, l.bound_server_ip, l.created_at, l.expires_at as expires,
-             COALESCE(u.email, 'Unknown') as user_email, COALESCE(p.title, 'General License') as product_name
+      SELECT l.id, l.license_key as \`key\`, l.status, l.bound_server_ip, l.download_count, l.created_at, l.expires_at as expires,
+             COALESCE(u.email, 'Unknown') as user_email, COALESCE(u.username, 'Unknown') as user_name,
+             COALESCE(p.title, 'General License') as product_name, p.slug as product_slug
       FROM licenses l
       LEFT JOIN users u ON l.user_id = u.id
       LEFT JOIN products p ON l.product_id = p.id
@@ -445,12 +446,89 @@ export async function handleAdminLicenseAction(req: AuthRequest, res: Response):
     const { id, action } = req.params;
     if (action === 'revoke') {
       await pool.query('UPDATE licenses SET status = "revoked" WHERE id = ?', [id]);
-    } else if (action === 'activate') {
+    } else if (action === 'activate' || action === 'reactivate') {
       await pool.query('UPDATE licenses SET status = "active" WHERE id = ?', [id]);
     } else if (action === 'reset_ip') {
       await pool.query('UPDATE licenses SET bound_server_ip = NULL WHERE id = ?', [id]);
     }
     res.json({ message: `License ${action} successful` });
+  } catch (error: any) {
+    res.status(500).json({ detail: error.message });
+  }
+}
+
+export async function createAdminLicense(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { user_email, product_id, bound_server_ip } = req.body;
+    if (!user_email || !product_id) {
+      res.status(400).json({ detail: 'Email de usuario y Producto son obligatorios' });
+      return;
+    }
+
+    const [uRows]: any = await pool.query('SELECT id, username FROM users WHERE email = ?', [user_email.trim()]);
+    if (uRows.length === 0) {
+      res.status(404).json({ detail: 'Usuario no encontrado con ese email' });
+      return;
+    }
+    const user = uRows[0];
+
+    const [pRows]: any = await pool.query('SELECT id, title FROM products WHERE id = ?', [product_id]);
+    if (pRows.length === 0) {
+      res.status(404).json({ detail: 'Producto no encontrado' });
+      return;
+    }
+
+    const { generateLicenseKey } = require('../services/licenseService');
+    const licenseKey = generateLicenseKey();
+
+    // Create free order as reference
+    const orderNumber = `VTX-MANUAL-${Date.now().toString().slice(-6)}`;
+    const [ordRes]: any = await pool.query(
+      `INSERT INTO orders (order_number, user_id, total_amount, currency, status, payment_method, customer_email)
+       VALUES (?, ?, 0.00, 'EUR', 'completed', 'admin_grant', ?)`,
+      [orderNumber, user.id, user_email.trim()]
+    );
+
+    const [licRes]: any = await pool.query(
+      `INSERT INTO licenses (license_key, user_id, product_id, order_id, status, bound_server_ip, max_ips)
+       VALUES (?, ?, ?, ?, 'active', ?, 1)`,
+      [licenseKey, user.id, product_id, ordRes.insertId, bound_server_ip ? String(bound_server_ip).trim() : null]
+    );
+
+    res.status(201).json({
+      message: 'Licencia creada y entregada en Vertex Keymaster con éxito',
+      id: licRes.insertId,
+      license_key: licenseKey
+    });
+  } catch (error: any) {
+    console.error('createAdminLicense error:', error);
+    res.status(500).json({ detail: error.message });
+  }
+}
+
+export async function encryptAdminLua(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { luaCode, licenseKey, productTitle } = req.body;
+    if (!luaCode || typeof luaCode !== 'string') {
+      res.status(400).json({ detail: 'Debes ingresar código Lua' });
+      return;
+    }
+
+    const { encryptLuaCode } = require('../services/escrowService');
+    const host = req.get('x-forwarded-host') || req.get('host') || 'vertex-studio-api.onrender.com';
+    const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+
+    const encrypted = encryptLuaCode(luaCode, {
+      licenseKey: licenseKey || 'VTX-DEMO-TEST-KEY',
+      productTitle: productTitle || 'Custom Protected Resource',
+      productSlug: 'custom-resource',
+      version: '1.0.0',
+      ownerUsername: req.user?.username || 'Admin',
+      ownerEmail: req.user?.email || 'admin@vertexstudio.com',
+      apiUrl: `${proto}://${host}`
+    });
+
+    res.json({ encryptedLua: encrypted });
   } catch (error: any) {
     res.status(500).json({ detail: error.message });
   }

@@ -210,6 +210,41 @@ async function ensureDatabaseSchema() {
 
     // Ensure Super Admin has 'Super Admin' as staff_role
     await pool.query("UPDATE users SET staff_role = 'Super Admin' WHERE email = 'sebasruades8@gmail.com'");
+
+    // Ensure Keymaster & Escrow columns exist
+    try {
+      await pool.query("ALTER TABLE products ADD COLUMN delivery_type VARCHAR(50) DEFAULT 'keymaster_escrow'");
+    } catch (err) {}
+    try {
+      await pool.query("ALTER TABLE products ADD COLUMN tebex_package_id VARCHAR(100) NULL");
+    } catch (err) {}
+
+    try {
+      await pool.query("ALTER TABLE orders ADD COLUMN cfx_username VARCHAR(100) NULL");
+    } catch (err) {}
+    try {
+      await pool.query("ALTER TABLE orders ADD COLUMN keymaster_status VARCHAR(50) DEFAULT 'granted'");
+    } catch (err) {}
+
+    try {
+      await pool.query("ALTER TABLE licenses ADD COLUMN cfx_username VARCHAR(100) NULL");
+    } catch (err) {}
+    try {
+      await pool.query("ALTER TABLE licenses ADD COLUMN delivery_type VARCHAR(50) DEFAULT 'keymaster_escrow'");
+    } catch (err) {}
+    try {
+      await pool.query("ALTER TABLE licenses ADD COLUMN keymaster_status VARCHAR(50) DEFAULT 'granted'");
+    } catch (err) {}
+    try {
+      await pool.query("ALTER TABLE licenses ADD COLUMN download_count INT DEFAULT 0");
+    } catch (err) {}
+
+    try {
+      await pool.query("ALTER TABLE users ADD COLUMN cfx_username VARCHAR(100) NULL");
+    } catch (err) {}
+    try {
+      await pool.query("ALTER TABLE users ADD COLUMN cfx_avatar VARCHAR(500) NULL");
+    } catch (err) {}
   } catch (err) {
     console.error('Database schema auto-check error:', err);
   }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
-import { Trash2, ShoppingBag, Lock, Tag, X } from "lucide-react";
+import { Trash2, ShoppingBag, Lock, Tag, X, Key, ShieldCheck, Server } from "lucide-react";
 import { toast } from "sonner";
 import api, { formatApiError } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
@@ -154,6 +154,17 @@ export default function Checkout() {
             <div className="flex justify-between font-display font-black text-xl mb-6">
               <span>Total</span>
               <span className={appliedCoupon ? "text-emerald-300" : ""}>€{finalTotal.toFixed(2)}</span>
+            </div>
+
+            {/* Keymaster Delivery Guarantee */}
+            <div className="mb-5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 space-y-1">
+              <div className="flex items-center gap-1.5 font-semibold text-white">
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                Entrega Inmediata en Vertex Keymaster
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Tus scripts protegidos con Vertex Escrow se generarán automáticamente en tu panel de Keymaster listos para descargar y configurar.
+              </p>
             </div>
 
             {!user ? (
