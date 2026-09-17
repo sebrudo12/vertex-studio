@@ -21,22 +21,7 @@ function Counter({ value, label }) {
 
 function FeaturedHeroShowcase({ products }) {
   const featured = (Array.isArray(products) ? products : []).filter((p) => p.featured);
-  const items = featured.length > 0 ? featured : (Array.isArray(products) && products.length > 0 ? products : [
-    {
-      id: "featured-mechanics",
-      slug: "vertex-mechanics",
-      title: "Vertex Mechanics",
-      name: "Vertex Mechanics",
-      short_description: "Advanced mechanic management system with tuning tablet, diagnostic scanners, and realistic repair minigames.",
-      price: 29.99,
-      category: "Scripts",
-      frameworks: ["QBCore", "ESX", "Qbox"],
-      version: "2.1.0",
-      featured: true,
-      image: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80",
-      thumbnail: "https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80"
-    }
-  ]);
+  const items = featured.length > 0 ? featured : (Array.isArray(products) ? products : []);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -48,6 +33,49 @@ function FeaturedHeroShowcase({ products }) {
     }, 5000);
     return () => clearInterval(timer);
   }, [items.length, isHovered]);
+
+  if (items.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.94 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.7, delay: 0.2 }}
+        className="relative group"
+      >
+        <div className="absolute -inset-6 bg-primary/10 blur-3xl rounded-full pointer-events-none" />
+        <div className="relative rounded-2xl border border-white/15 overflow-hidden glass shadow-2xl p-8 sm:p-10 flex flex-col justify-between min-h-[360px]">
+          <div>
+            <div className="flex items-center justify-between gap-2 mb-6">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-mono font-semibold">
+                <Sparkles className="h-3.5 w-3.5" /> Vertex Studio 2.0
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono text-emerald-400">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Servidor Activo
+              </span>
+            </div>
+
+            <h3 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight leading-snug">
+              Próximamente Recursos Exclusivos
+            </h3>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+              Los recursos y scripts destacados que crees desde el panel de administración aparecerán aquí automáticamente en este carrusel interactivo.
+            </p>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-white/10 flex flex-wrap items-center justify-between gap-4">
+            <div className="text-xs font-mono text-muted-foreground">
+              Desarrollado para FiveM · QBCore · ESX · Qbox
+            </div>
+            <Button asChild size="sm" className="bg-white text-black hover:bg-white/90 font-semibold">
+              <Link to="/store">
+                Ir a la Tienda <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   const safeIndex = currentIndex % items.length;
   const current = items[safeIndex] || items[0];
@@ -307,7 +335,17 @@ export default function Home() {
           </Button>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(Array.isArray(products) ? products : []).slice(0, 6).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)}
+          {(Array.isArray(products) && products.length > 0) ? (
+            products.slice(0, 6).map((p, i) => <ProductCard key={p.id} product={p} index={i} />)
+          ) : (
+            <div className="col-span-full rounded-2xl border border-white/10 bg-card/40 p-12 text-center backdrop-blur-sm">
+              <Package className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-60" />
+              <h3 className="font-display font-bold text-lg text-white">No hay recursos disponibles aún</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+                Los nuevos recursos añadidos desde el panel de administración se mostrarán aquí de forma automática.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

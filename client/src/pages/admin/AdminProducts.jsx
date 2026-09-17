@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
 import api, { formatApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 
 const CATEGORIES = ["Scripts", "UI", "Framework", "Vehicles", "Maps", "Misc"];
 const empty = { name: "", slug: "", category: "Scripts", price: 0, short_description: "", description: "",
-  image: "", gallery: "", frameworks: "QBCore, ESX", version: "1.0.0", status: "Available",
+  image: "", gallery: "", frameworks: "QBCore, ESX", version: "1.0.0", status: "Available", featured: false,
   dependencies: "oxmysql, ox_lib", features: "", download_url: "", download_filename: "" };
 
 export default function AdminProducts() {
@@ -19,21 +19,32 @@ export default function AdminProducts() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(empty);
 
-  const load = () => api.get("/admin/products").then((r) => setProducts(r.data));
+  const load = () => api.get("/admin/products").then((r) => setProducts(Array.isArray(r.data) ? r.data : []));
   useEffect(() => { load(); }, []);
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   const openNew = () => { setEditing(null); setForm(empty); setOpen(true); };
   const openEdit = (p) => {
     setEditing(p);
-    setForm({ ...p, gallery: (p.gallery || []).join(", "), frameworks: (p.frameworks || []).join(", "),
+    setForm({ ...p, featured: Boolean(p.featured), gallery: (p.gallery || []).join(", "), frameworks: (p.frameworks || []).join(", "),
       dependencies: (p.dependencies || []).join(", "), features: (p.features || []).join(", ") });
     setOpen(true);
   };
 
+  const toggleFeatured = async (p) => {
+    try {
+      const next = !p.featured;
+      await api.put(`/admin/products/${p.id}`, { featured: next });
+      toast.success(next ? `"${p.name}" marcado como destacado` : `"${p.name}" desmarcado de destacado`);
+      load();
+    } catch {
+      toast.error("Error al actualizar estado destacado");
+    }
+  };
+
   const save = async () => {
     const payload = {
-      ...form, price: parseFloat(form.price) || 0,
+      ...form, price: parseFloat(form.price) || 0, featured: form.featured ? 1 : 0,
       gallery: form.gallery.split(",").map((s) => s.trim()).filter(Boolean),
       frameworks: form.frameworks.split(",").map((s) => s.trim()).filter(Boolean),
       dependencies: form.dependencies.split(",").map((s) => s.trim()).filter(Boolean),
@@ -41,15 +52,15 @@ export default function AdminProducts() {
     };
     delete payload.id; delete payload.sales; delete payload.created_at; delete payload.last_updated; delete payload.reviews;
     try {
-      if (editing) { await api.put(`/admin/products/${editing.id}`, payload); toast.success("Product updated"); }
-      else { await api.post("/admin/products", payload); toast.success("Product created"); }
+      if (editing) { await api.put(`/admin/products/${editing.id}`, payload); toast.success("Producto actualizado"); }
+      else { await api.post("/admin/products", payload); toast.success("Producto creado"); }
       setOpen(false); load();
     } catch (e) { toast.error(formatApiError(e.response?.data?.detail)); }
   };
 
   const del = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
-    await api.delete(`/admin/products/${id}`); toast.success("Deleted"); load();
+    if (!window.confirm("¿Eliminar este producto?")) return;
+    await api.delete(`/admin/products/${id}`); toast.success("Producto eliminado"); load();
   };
 
   return (
@@ -65,22 +76,46 @@ export default function AdminProducts() {
             <th className="text-left font-medium px-4 py-3">Product</th>
             <th className="text-left font-medium px-4 py-3 hidden sm:table-cell">Category</th>
             <th className="text-left font-medium px-4 py-3">Price</th>
+            <th className="text-left font-medium px-4 py-3">Destacado</th>
             <th className="text-left font-medium px-4 py-3 hidden md:table-cell">Sales</th>
             <th className="text-right font-medium px-4 py-3">Actions</th>
           </tr></thead>
           <tbody className="divide-y divide-white/10">
-            {products.map((p) => (
-              <tr key={p.id} data-testid={`admin-product-${p.slug}`}>
-                <td className="px-4 py-3"><div className="flex items-center gap-3"><img src={p.image} alt="" className="h-9 w-12 rounded object-cover" /><span className="font-medium">{p.name}</span></div></td>
-                <td className="px-4 py-3 hidden sm:table-cell text-muted-foreground">{p.category}</td>
-                <td className="px-4 py-3 font-semibold">{Number(p.price) === 0 ? "Free" : `€${Number(p.price).toFixed(2)}`}</td>
-                <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{p.sales || 0}</td>
-                <td className="px-4 py-3 text-right">
-                  <button onClick={() => openEdit(p)} data-testid={`edit-${p.slug}`} className="p-2 rounded hover:bg-white/5 text-muted-foreground hover:text-white"><Pencil className="h-4 w-4" /></button>
-                  <button onClick={() => del(p.id)} data-testid={`delete-${p.slug}`} className="p-2 rounded hover:bg-white/5 text-muted-foreground hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
+                  No hay productos registrados. Haz clic en "New Product" para crear uno.
                 </td>
               </tr>
-            ))}
+            ) : (
+              products.map((p) => (
+                <tr key={p.id} data-testid={`admin-product-${p.slug}`}>
+                  <td className="px-4 py-3"><div className="flex items-center gap-3"><img src={p.image} alt="" className="h-9 w-12 rounded object-cover" /><span className="font-medium">{p.name}</span></div></td>
+                  <td className="px-4 py-3 hidden sm:table-cell text-muted-foreground">{p.category}</td>
+                  <td className="px-4 py-3 font-semibold">{Number(p.price) === 0 ? "Free" : `€${Number(p.price).toFixed(2)}`}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleFeatured(p)}
+                      className={`inline-flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                        p.featured
+                          ? "bg-amber-400/15 border-amber-400/40 text-amber-300 shadow-sm hover:bg-amber-400/25"
+                          : "bg-white/5 border-white/10 text-muted-foreground hover:text-white hover:bg-white/10"
+                      }`}
+                      title="Alternar producto destacado en el Hero de la página principal"
+                    >
+                      <Star className={`h-3.5 w-3.5 ${p.featured ? "fill-amber-400 text-amber-400" : ""}`} />
+                      {p.featured ? "Destacado" : "Normal"}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell text-muted-foreground">{p.sales || 0}</td>
+                  <td className="px-4 py-3 text-right">
+                    <button onClick={() => openEdit(p)} data-testid={`edit-${p.slug}`} className="p-2 rounded hover:bg-white/5 text-muted-foreground hover:text-white"><Pencil className="h-4 w-4" /></button>
+                    <button onClick={() => del(p.id)} data-testid={`delete-${p.slug}`} className="p-2 rounded hover:bg-white/5 text-muted-foreground hover:text-red-400"><Trash2 className="h-4 w-4" /></button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -99,6 +134,21 @@ export default function AdminProducts() {
             <Field label="Price (€)"><Input data-testid="pf-price" type="number" step="0.01" value={form.price} onChange={set("price")} className="bg-card border-white/10" /></Field>
             <Field label="Version"><Input value={form.version} onChange={set("version")} className="bg-card border-white/10" /></Field>
             <Field label="Status"><Input value={form.status} onChange={set("status")} className="bg-card border-white/10" /></Field>
+
+            <div className="col-span-2 flex items-center gap-2 p-3 rounded-lg bg-white/5 border border-white/10">
+              <input
+                type="checkbox"
+                id="pf-featured"
+                checked={Boolean(form.featured)}
+                onChange={(e) => setForm({ ...form, featured: e.target.checked })}
+                className="h-4 w-4 rounded border-white/20 text-primary focus:ring-0 cursor-pointer"
+              />
+              <label htmlFor="pf-featured" className="text-xs text-white font-medium cursor-pointer flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                Marcar como Producto Destacado (aparecerá en el carrusel de la página principal)
+              </label>
+            </div>
+
             <Field label="Image URL" full><Input data-testid="pf-image" value={form.image} onChange={set("image")} className="bg-card border-white/10" /></Field>
             <Field label="Short Description" full><Input value={form.short_description} onChange={set("short_description")} className="bg-card border-white/10" /></Field>
             <Field label="Description" full><Textarea rows={3} value={form.description} onChange={set("description")} className="bg-card border-white/10" /></Field>

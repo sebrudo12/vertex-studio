@@ -72,6 +72,7 @@ export async function getAdminProducts(req: AuthRequest, res: Response): Promise
       frameworks: typeof p.frameworks === 'string' ? JSON.parse(p.frameworks || '[]') : (p.frameworks || []),
       version: p.version,
       status: p.status === 'active' ? 'Available' : 'Draft',
+      featured: Boolean(p.featured),
       dependencies: typeof p.dependencies === 'string' ? JSON.parse(p.dependencies || '[]') : (p.dependencies || []),
       features: typeof p.features === 'string' ? JSON.parse(p.features || '[]') : (p.features || []),
       download_filename: p.download_filename,
@@ -87,8 +88,8 @@ export async function createAdminProduct(req: AuthRequest, res: Response): Promi
   try {
     const form = req.body;
     const [ins]: any = await pool.query(
-      `INSERT INTO products (title, slug, short_description, description, price, category, frameworks, version, status, thumbnail, download_filename, features, dependencies)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO products (title, slug, short_description, description, price, category, frameworks, version, status, featured, thumbnail, download_filename, features, dependencies)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         form.name || 'New Resource',
         form.slug || (form.name || 'new-resource').toLowerCase().replace(/\s+/g, '-'),
@@ -99,6 +100,7 @@ export async function createAdminProduct(req: AuthRequest, res: Response): Promi
         JSON.stringify(form.frameworks || []),
         form.version || '1.0.0',
         form.status === 'Available' ? 'active' : 'active',
+        form.featured ? 1 : 0,
         form.image || '/logo.png',
         form.download_filename || 'script.zip',
         JSON.stringify(form.features || []),
@@ -127,6 +129,7 @@ export async function updateAdminProduct(req: AuthRequest, res: Response): Promi
         category = COALESCE(?, category),
         frameworks = COALESCE(?, frameworks),
         version = COALESCE(?, version),
+        featured = COALESCE(?, featured),
         thumbnail = COALESCE(?, thumbnail),
         download_filename = COALESCE(?, download_filename),
         features = COALESCE(?, features),
@@ -141,6 +144,7 @@ export async function updateAdminProduct(req: AuthRequest, res: Response): Promi
         form.category,
         form.frameworks ? JSON.stringify(form.frameworks) : null,
         form.version,
+        form.featured !== undefined ? (form.featured ? 1 : 0) : null,
         form.image,
         form.download_filename,
         form.features ? JSON.stringify(form.features) : null,
@@ -150,6 +154,7 @@ export async function updateAdminProduct(req: AuthRequest, res: Response): Promi
     );
     res.json({ message: 'Product updated' });
   } catch (error: any) {
+    console.error('update admin product error:', error);
     res.status(500).json({ detail: error.message });
   }
 }
@@ -210,14 +215,117 @@ export async function handleAdminUserAction(req: AuthRequest, res: Response): Pr
   }
 }
 
+// Staff Roles Zone
+export async function getStaffRoles(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const [roles]: any = await pool.query(`
+      SELECT r.id, r.name, r.color, r.description, r.created_at,
+             COUNT(u.id) as members_count
+      FROM staff_roles r
+      LEFT JOIN users u ON u.staff_role = r.name AND u.role = 'admin'
+      GROUP BY r.id
+      ORDER BY r.id ASC
+    `);
+    res.json(roles);
+  } catch (error: any) {
+    console.error('getStaffRoles error:', error);
+    res.status(500).json({ detail: 'Error al obtener roles de staff' });
+  }
+}
+
+export async function createStaffRole(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { name, color, description } = req.body;
+    if (!name || !name.trim()) {
+      res.status(400).json({ detail: 'El nombre del rol es obligatorio' });
+      return;
+    }
+    const cleanName = name.trim();
+    const roleColor = color || '#38bdf8';
+    const desc = description ? description.trim() : '';
+
+    await pool.query(
+      'INSERT INTO staff_roles (name, color, description) VALUES (?, ?, ?)',
+      [cleanName, roleColor, desc]
+    );
+
+    res.status(201).json({ message: `Rol "${cleanName}" creado exitosamente` });
+  } catch (error: any) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      res.status(400).json({ detail: 'Ya existe un rol con este nombre' });
+      return;
+    }
+    console.error('createStaffRole error:', error);
+    res.status(500).json({ detail: 'Error al crear rol de staff' });
+  }
+}
+
+export async function deleteStaffRole(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const [target]: any = await pool.query('SELECT * FROM staff_roles WHERE id = ?', [id]);
+    if (target.length === 0) {
+      res.status(404).json({ detail: 'Rol no encontrado' });
+      return;
+    }
+    const roleName = target[0].name;
+    if (roleName === 'Administrador') {
+      res.status(400).json({ detail: 'No se puede eliminar el rol base Administrador' });
+      return;
+    }
+
+    // Reassign any users with this role to 'Administrador'
+    await pool.query("UPDATE users SET staff_role = 'Administrador' WHERE staff_role = ?", [roleName]);
+    await pool.query('DELETE FROM staff_roles WHERE id = ?', [id]);
+
+    res.json({ message: `Rol "${roleName}" eliminado correctamente` });
+  } catch (error: any) {
+    console.error('deleteStaffRole error:', error);
+    res.status(500).json({ detail: 'Error al eliminar rol' });
+  }
+}
+
+export async function updateAdminRole(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const { id } = req.params;
+    const { staff_role } = req.body;
+
+    if (!staff_role) {
+      res.status(400).json({ detail: 'Debe especificar el rol' });
+      return;
+    }
+
+    const [target]: any = await pool.query('SELECT id, email FROM users WHERE id = ?', [id]);
+    if (target.length === 0) {
+      res.status(404).json({ detail: 'Usuario no encontrado' });
+      return;
+    }
+
+    if (target[0].email.toLowerCase() === 'sebasruades8@gmail.com') {
+      res.status(400).json({ detail: 'El Dueño / Super Admin no puede ser modificado' });
+      return;
+    }
+
+    await pool.query('UPDATE users SET staff_role = ?, role = "admin" WHERE id = ?', [staff_role, id]);
+    res.json({ message: `Rango actualizado a "${staff_role}" correctamente` });
+  } catch (error: any) {
+    console.error('updateAdminRole error:', error);
+    res.status(500).json({ detail: 'Error al actualizar rango del administrador' });
+  }
+}
+
 // Admins Zone
 export async function getAdmins(req: AuthRequest, res: Response): Promise<void> {
   try {
     const [admins]: any = await pool.query(`
-      SELECT id, username as name, email, role, status, avatar_url as avatar, discord_id, discord_tag, created_at
-      FROM users
-      WHERE role = "admin"
-      ORDER BY (email = 'sebasruades8@gmail.com') DESC, created_at ASC
+      SELECT u.id, u.username as name, u.email, u.role, 
+             COALESCE(u.staff_role, 'Administrador') as staff_role,
+             u.status, u.avatar_url as avatar, u.discord_id, u.discord_tag, u.created_at,
+             COALESCE(r.color, '#10b981') as role_color
+      FROM users u
+      LEFT JOIN staff_roles r ON r.name = u.staff_role
+      WHERE u.role = "admin"
+      ORDER BY (u.email = 'sebasruades8@gmail.com') DESC, u.created_at ASC
     `);
     res.json(admins);
   } catch (error: any) {
@@ -227,17 +335,19 @@ export async function getAdmins(req: AuthRequest, res: Response): Promise<void> 
 
 export async function addAdmin(req: AuthRequest, res: Response): Promise<void> {
   try {
-    const { email, username, password } = req.body;
+    const { email, username, password, staff_role } = req.body;
 
     if (!email) {
-      res.status(400).json({ detail: 'Email is required to grant admin' });
+      res.status(400).json({ detail: 'El correo electrónico es requerido' });
       return;
     }
 
+    const assignedStaffRole = staff_role || 'Administrador';
+
     const [existing]: any = await pool.query('SELECT id, email, role FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
-      await pool.query('UPDATE users SET role = "admin" WHERE id = ?', [existing[0].id]);
-      res.json({ message: `User ${email} promoted to admin successfully` });
+      await pool.query('UPDATE users SET role = "admin", staff_role = ? WHERE id = ?', [assignedStaffRole, existing[0].id]);
+      res.json({ message: `Usuario ${email} asignado con rango "${assignedStaffRole}" exitosamente` });
       return;
     }
 
@@ -247,18 +357,19 @@ export async function addAdmin(req: AuthRequest, res: Response): Promise<void> {
     const avatarUrl = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(uname)}`;
 
     const [ins]: any = await pool.query(
-      'INSERT INTO users (username, email, password_hash, role, avatar_url, status) VALUES (?, ?, ?, "admin", ?, "active")',
-      [uname, email, passwordHash, avatarUrl]
+      'INSERT INTO users (username, email, password_hash, role, staff_role, avatar_url, status) VALUES (?, ?, ?, "admin", ?, ?, "active")',
+      [uname, email, passwordHash, assignedStaffRole, avatarUrl]
     );
 
     res.status(201).json({
-      message: `Admin account created for ${email}`,
+      message: `Cuenta de staff creada para ${email} con rango "${assignedStaffRole}"`,
       id: ins.insertId,
       username: uname,
-      email
+      email,
+      staff_role: assignedStaffRole
     });
   } catch (error: any) {
-    res.status(500).json({ detail: 'Failed to add admin' });
+    res.status(500).json({ detail: 'Error al agregar miembro de staff' });
   }
 }
 
@@ -267,20 +378,20 @@ export async function demoteAdmin(req: AuthRequest, res: Response): Promise<void
     const { id } = req.params;
     const [target]: any = await pool.query('SELECT id, email FROM users WHERE id = ?', [id]);
     if (target.length === 0) {
-      res.status(404).json({ detail: 'User not found' });
+      res.status(404).json({ detail: 'Usuario no encontrado' });
       return;
     }
 
     const PROTECTED = ['sebasruades8@gmail.com', 'admin@vertexstudio.com'];
     if (PROTECTED.includes(target[0].email.toLowerCase())) {
-      res.status(400).json({ detail: 'Cannot demote a protected Super Admin account' });
+      res.status(400).json({ detail: 'No se puede degradar al Super Admin Principal' });
       return;
     }
 
-    await pool.query('UPDATE users SET role = "customer" WHERE id = ?', [id]);
-    res.json({ message: 'Administrator demoted to customer successfully' });
+    await pool.query('UPDATE users SET role = "customer", staff_role = NULL WHERE id = ?', [id]);
+    res.json({ message: 'Miembro de staff degradado a cliente exitosamente' });
   } catch (error: any) {
-    res.status(500).json({ detail: 'Failed to demote admin' });
+    res.status(500).json({ detail: 'Error al degradar administrador' });
   }
 }
 

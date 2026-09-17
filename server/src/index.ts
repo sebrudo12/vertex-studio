@@ -171,153 +171,45 @@ async function ensureDatabaseSchema() {
       );
     }
 
-    // Ensure default featured products exist if database has 0 products
-    const [prodRows]: any = await pool.query("SELECT COUNT(*) as count FROM products");
-    if (prodRows && Number(prodRows[0]?.count) === 0) {
-      console.log('--- Database has 0 products, seeding default Vertex Studio products ---');
-      const defaultProducts = [
-        {
-          slug: 'vertex-mechanics',
-          title: 'Vertex Mechanics',
-          short_description: 'Advanced mechanic management system with tuning tablet, diagnostic scanners, and realistic repair minigames.',
-          description: '### Complete Mechanic Roleplay System\nVertex Mechanics transforms the vehicle tuning and repair experience on FiveM. Mechanics receive a realistic in-game tablet to diagnose engine health, suspension degradation, gearbox wear, and apply cosmetic tunings with an interactive spray booth and dynamic color wheel.',
-          price: 29.99,
-          category: 'Scripts',
-          frameworks: JSON.stringify(['QBCore', 'ESX', 'Qbox']),
-          version: '2.1.0',
-          status: 'active',
-          featured: 1,
-          thumbnail: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=800&auto=format&fit=crop&q=80',
-          gallery: JSON.stringify([
-            'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?w=1200&auto=format&fit=crop&q=80',
-            'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=1200&auto=format&fit=crop&q=80'
-          ]),
-          video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          dependencies: JSON.stringify(['ox_lib', 'oxmysql']),
-          features: JSON.stringify([
-            'Modern NUI Tablet',
-            'Vehicle Diagnostic Scanner',
-            'Custom Spray Booth with Color Picker',
-            'Realistic Repair Minigames',
-            'QBCore & ESX Full Support',
-            'Discord Webhook Logs'
-          ]),
-          download_filename: 'vertex_mechanics.zip'
-        },
-        {
-          slug: 'vertex-hud',
-          title: 'Vertex HUD Premium',
-          short_description: 'Ultra-clean, modular, high-FPS game HUD with compass, cinematic mode, and custom stress/armor/voice meters.',
-          description: '### The Next Generation HUD for FiveM\nVertex HUD brings AAA game quality UI to your roleplay server. Lightweight, beautiful, and completely customizable by each player via an intuitive in-game settings menu.',
-          price: 19.99,
-          category: 'UI',
-          frameworks: JSON.stringify(['QBCore', 'ESX', 'Qbox', 'Standalone']),
-          version: '1.4.0',
-          status: 'active',
-          featured: 1,
-          thumbnail: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&auto=format&fit=crop&q=80',
-          gallery: JSON.stringify([
-            'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&auto=format&fit=crop&q=80'
-          ]),
-          video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          dependencies: JSON.stringify(['None']),
-          features: JSON.stringify([
-            '0.01ms Optimized Resmon',
-            'Modular Drag & Drop Layout',
-            'Vehicle Gauges & Nitro Effect',
-            'Cinematic Cam Mode',
-            'Voice Range Indicator',
-            'Customizable Colors'
-          ]),
-          download_filename: 'vertex_hud.zip'
-        },
-        {
-          slug: 'vertex-banking',
-          title: 'Vertex Banking & Crypto',
-          short_description: 'Next-generation financial system with debit cards, loan management, crypto exchange, and transaction histories.',
-          description: '### Modern Banking & Crypto Ecosystem\nProvide your players with a financial experience inspired by modern fintech apps. Create savings accounts, apply for vehicle and business loans with interest rates, invest in fluctuating cryptocurrency markets, and wire money with transaction receipts.',
-          price: 24.99,
-          category: 'Scripts',
-          frameworks: JSON.stringify(['QBCore', 'ESX', 'Qbox']),
-          version: '1.2.0',
-          status: 'active',
-          featured: 1,
-          thumbnail: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=800&auto=format&fit=crop&q=80',
-          gallery: JSON.stringify([
-            'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=1200&auto=format&fit=crop&q=80'
-          ]),
-          video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          dependencies: JSON.stringify(['oxmysql']),
-          features: JSON.stringify([
-            'Interactive ATM & Bank UI',
-            'Dynamic Crypto Trading Market',
-            'Multi-Account & Shared Business Wallets',
-            'Debit Card PIN & Fraud Protection',
-            'PDF-Style Invoices and Transaction History'
-          ]),
-          download_filename: 'vertex_banking.zip'
-        },
-        {
-          slug: 'vertex-loading-screen',
-          title: 'Vertex Loading Screen',
-          short_description: 'Modern, audio-visual animated loading screen with audio visualizer, rules carousel, and server stats.',
-          description: '### High-Performance Loading Screen for FiveM\nVertex Loading Screen is built from the ground up for modern FiveM servers looking for a truly breathtaking first impression.',
-          price: 9.99,
-          category: 'UI',
-          frameworks: JSON.stringify(['Standalone', 'QBCore', 'ESX', 'Qbox']),
-          version: '1.0.0',
-          status: 'active',
-          featured: 1,
-          thumbnail: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop&q=80',
-          gallery: JSON.stringify([
-            'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1200&auto=format&fit=crop&q=80'
-          ]),
-          video_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-          dependencies: JSON.stringify(['None (Standalone)']),
-          features: JSON.stringify([
-            'Modern NUI Clean Design',
-            'Interactive Audio Visualizer',
-            'Server Rules & Staff Carousel',
-            '0.00ms Resmon Performance'
-          ]),
-          download_filename: 'vertex_loadingscreen.zip'
-        }
-      ];
-
-      for (const p of defaultProducts) {
-        const [insertRes]: any = await pool.query(
-          `INSERT INTO products 
-          (slug, title, short_description, description, price, category, frameworks, version, status, featured, thumbnail, gallery, video_url, dependencies, features, download_filename) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            p.slug, p.title, p.short_description, p.description, p.price, p.category,
-            p.frameworks, p.version, p.status, p.featured, p.thumbnail, p.gallery,
-            p.video_url, p.dependencies, p.features, p.download_filename
-          ]
-        );
-        const prodId = insertRes.insertId;
-        await pool.query(
-          `INSERT INTO product_versions (product_id, version, changelog, zip_path) VALUES (?, ?, ?, ?)`,
-          [prodId, p.version, `Initial release of ${p.title}`, p.download_filename]
-        );
-      }
-      console.log('--- Default products seeded successfully ---');
+    // Purge predetermined default products so store starts clean with zero default resources
+    try {
+      await pool.query("DELETE FROM products WHERE slug IN ('vertex-mechanics', 'vertex-hud', 'vertex-banking', 'vertex-loading-screen')");
+      await pool.query("DELETE FROM reviews WHERE comment LIKE '%Exceptional quality and 0.00ms resmon%'");
+    } catch (e) {
+      console.error('Error cleaning default products:', e);
     }
 
-    // Ensure sample reviews exist if empty
-    const [revCount]: any = await pool.query("SELECT COUNT(*) as count FROM reviews");
-    if (revCount && Number(revCount[0]?.count) === 0) {
-      const [u]: any = await pool.query("SELECT id FROM users LIMIT 1");
-      const [p]: any = await pool.query("SELECT id FROM products LIMIT 1");
-      if (u.length > 0 && p.length > 0) {
-        await pool.query(
-          `INSERT INTO reviews (user_id, product_id, rating, comment, status) VALUES 
-          (?, ?, 5, 'Exceptional quality and 0.00ms resmon. The best FiveM scripts we have ever used!', 'approved'),
-          (?, ?, 5, 'Super clean UI and seamless framework integration. Customer support in Discord is top tier.', 'approved')`,
-          [u[0].id, p[0].id, u[0].id, p[0].id]
-        );
-      }
+    // Ensure staff_roles table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS staff_roles (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(50) NOT NULL UNIQUE,
+        color VARCHAR(30) NOT NULL DEFAULT '#38bdf8',
+        description VARCHAR(255) NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    // Ensure default staff roles exist
+    const [rolesCount]: any = await pool.query("SELECT COUNT(*) as count FROM staff_roles");
+    if (rolesCount && Number(rolesCount[0]?.count) === 0) {
+      await pool.query(`
+        INSERT INTO staff_roles (name, color, description) VALUES
+        ('Administrador', '#10b981', 'Acceso completo de gestión al panel administrativo'),
+        ('Moderador', '#3b82f6', 'Gestión de usuarios, reseñas y moderación general'),
+        ('Soporte', '#a855f7', 'Atención y respuesta de tickets de soporte técnico')
+      `);
     }
+
+    // Ensure staff_role column in users
+    try {
+      await pool.query("ALTER TABLE users ADD COLUMN staff_role VARCHAR(50) DEFAULT 'Administrador'");
+    } catch (err) {
+      // Column might already exist
+    }
+
+    // Ensure Super Admin has 'Super Admin' as staff_role
+    await pool.query("UPDATE users SET staff_role = 'Super Admin' WHERE email = 'sebasruades8@gmail.com'");
   } catch (err) {
     console.error('Database schema auto-check error:', err);
   }

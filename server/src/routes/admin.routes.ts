@@ -4,6 +4,7 @@ import {
   getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct,
   getAdminUsers, handleAdminUserAction,
   getAdmins, addAdmin, demoteAdmin,
+  getStaffRoles, createStaffRole, deleteStaffRole, updateAdminRole,
   getAdminOrders,
   getAdminLicenses, handleAdminLicenseAction,
   getAdminTickets, updateAdminTicketStatus,
@@ -28,9 +29,15 @@ router.delete('/products/:id', deleteAdminProduct);
 router.get('/users', getAdminUsers);
 router.post('/users/:id/:action', handleAdminUserAction);
 
+// Staff Roles Zone
+router.get('/roles', getStaffRoles);
+router.post('/roles', createStaffRole);
+router.delete('/roles/:id', deleteStaffRole);
+
 // Admins Zone
 router.get('/admins', getAdmins);
 router.post('/admins', addAdmin);
+router.put('/admins/:id/role', updateAdminRole);
 router.post('/admins/:id/demote', demoteAdmin);
 router.delete('/admins/:id', demoteAdmin);
 
