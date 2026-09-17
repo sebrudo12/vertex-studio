@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Check, ShoppingCart, Zap, Calendar, Package, Layers, Star, ArrowLeft, Download } from "lucide-react";
-import api from "@/lib/api";
+import { Check, ShoppingCart, Zap, Calendar, Package, Layers, Star, ArrowLeft, Download, Key } from "lucide-react";
+import api, { formatApiError } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [active, setActive] = useState(0);
   const [owned, setOwned] = useState(false);
+  const [claiming, setClaiming] = useState(false);
 
   useEffect(() => {
     api.get(`/products/${slug}`).then((r) => { setProduct(r.data); setActive(0); }).catch(() => nav("/store"));
@@ -32,12 +33,21 @@ export default function ProductDetail() {
   const free = Number(product.price) === 0;
 
   const claimFree = async () => {
-    if (!user) return nav("/login");
+    if (!user) {
+      toast.info("Inicia sesión para reclamar este recurso");
+      return nav("/login");
+    }
+    setClaiming(true);
     try {
-      await api.post("/checkout/free-claim", { product_ids: [product.id] });
-      toast.success("Added to your account");
+      const { data } = await api.post("/checkout/free-claim", { product_ids: [product.id] });
+      toast.success(data?.message || "¡Añadido a tu cuenta y Keymaster!");
       setOwned(true);
-    } catch (e) { toast.error("Could not claim"); }
+    } catch (e) {
+      const msg = e.response?.data?.detail || e.response?.data?.error || "No se pudo reclamar el recurso";
+      toast.error(formatApiError(msg));
+    } finally {
+      setClaiming(false);
+    }
   };
 
   const gallery = product.gallery?.length ? product.gallery : [product.image];
@@ -118,12 +128,17 @@ export default function ProductDetail() {
               <div className="mt-1 text-xs text-muted-foreground">One-time payment · Lifetime updates</div>
 
               {owned ? (
-                <Button asChild data-testid="go-downloads" className="w-full mt-5 bg-white text-black hover:bg-white/90 font-semibold h-11">
-                  <Link to="/dashboard/downloads"><Download className="h-4 w-4 mr-2" /> Download</Link>
-                </Button>
+                <div className="mt-5 space-y-2">
+                  <Button asChild data-testid="go-keymaster" className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-11">
+                    <Link to="/keymaster"><Key className="h-4 w-4 mr-2" /> Abrir en Vertex Keymaster</Link>
+                  </Button>
+                  <Button asChild variant="outline" data-testid="go-downloads" className="w-full border-white/20 hover:bg-white/5 h-10">
+                    <Link to="/dashboard/downloads"><Download className="h-4 w-4 mr-2" /> Descargas directas</Link>
+                  </Button>
+                </div>
               ) : free ? (
-                <Button data-testid="claim-free" onClick={claimFree} className="w-full mt-5 bg-white text-black hover:bg-white/90 font-semibold h-11">
-                  <Download className="h-4 w-4 mr-2" /> Get for Free
+                <Button data-testid="claim-free" disabled={claiming} onClick={claimFree} className="w-full mt-5 bg-white text-black hover:bg-white/90 font-semibold h-11">
+                  <Download className="h-4 w-4 mr-2" /> {claiming ? "Reclamando recurso..." : "Get for Free"}
                 </Button>
               ) : (
                 <div className="mt-5 space-y-2">

@@ -227,6 +227,9 @@ async function ensureDatabaseSchema() {
     try {
       await pool.query("ALTER TABLE orders ADD COLUMN keymaster_status VARCHAR(50) DEFAULT 'granted'");
     } catch (err) {}
+    try {
+      await pool.query("ALTER TABLE orders MODIFY COLUMN payment_method VARCHAR(50) NOT NULL DEFAULT 'stripe'");
+    } catch (err) {}
 
     try {
       await pool.query("ALTER TABLE licenses ADD COLUMN cfx_username VARCHAR(100) NULL");

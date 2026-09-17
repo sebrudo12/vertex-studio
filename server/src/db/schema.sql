@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `total_amount` DECIMAL(10, 2) NOT NULL,
   `currency` VARCHAR(10) NOT NULL DEFAULT 'EUR',
   `status` ENUM('pending', 'completed', 'refunded', 'failed') NOT NULL DEFAULT 'pending',
-  `payment_method` ENUM('stripe', 'paypal', 'test_sandbox') NOT NULL DEFAULT 'stripe',
+  `payment_method` VARCHAR(50) NOT NULL DEFAULT 'stripe',
   `transaction_id` VARCHAR(150) NULL,
   `customer_email` VARCHAR(150) NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
