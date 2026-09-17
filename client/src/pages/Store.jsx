@@ -28,7 +28,17 @@ export default function Store() {
   return (
     <div>
       <section className="relative border-b border-white/10 overflow-hidden">
-        <div className="absolute inset-0 grid-bg" />
+        {/* Banner Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <img
+            src="/banner.png"
+            alt="Vertex Studio Store"
+            className="w-full h-full object-cover object-center opacity-30 blur-[0.5px]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-[#080808]/85 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-[#080808]/50" />
+        </div>
+        <div className="absolute inset-0 grid-bg opacity-30" />
         <div className="vx-container relative py-16">
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Vertex Store</p>
           <h1 className="font-display font-black uppercase text-4xl sm:text-5xl mt-2">The Store</h1>

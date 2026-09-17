@@ -207,7 +207,17 @@ export default function Keymaster() {
   return (
     <div className="vx-container py-8 max-w-7xl">
       {/* Header Banner - Cfx.re Keymaster Style */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-b from-[#13131c] via-[#0d0d14] to-[#08080c] p-7 md:p-9 mb-8 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0d0d14] p-7 md:p-9 mb-8 shadow-2xl">
+        {/* Banner Background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <img
+            src="/banner.png"
+            alt="Vertex Keymaster Banner"
+            className="w-full h-full object-cover object-center opacity-25"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0d0d14] via-[#0d0d14]/90 to-[#0d0d14]/75" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d14] to-transparent" />
+        </div>
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>

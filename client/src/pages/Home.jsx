@@ -256,7 +256,17 @@ export default function Home() {
     <div>
       {/* HERO */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 grid-bg" />
+        {/* Cinematic Banner Ambient Background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <img
+            src="/banner.png"
+            alt="Vertex Studio Banner"
+            className="w-full h-full object-cover object-center opacity-30 scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-[#080808]/80 to-[#080808]/60" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#080808] via-[#080808]/40 to-[#080808]" />
+        </div>
+        <div className="absolute inset-0 grid-bg opacity-40" />
         <div className="absolute inset-0 radial-glow" />
         <div className="vx-container relative pt-20 pb-16 lg:pt-28 lg:pb-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -321,6 +331,33 @@ export default function Home() {
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
           </motion.div>
         ))}
+      </section>
+
+      {/* BRAND BANNER SHOWCASE */}
+      <section className="vx-container py-4">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="relative rounded-3xl overflow-hidden border border-white/15 bg-black shadow-2xl group"
+        >
+          <img
+            src="/banner.png"
+            alt="Vertex Studio - FiveM Scripts"
+            className="w-full h-auto max-h-[380px] object-cover object-center transition-transform duration-700 group-hover:scale-[1.01]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#080808]/90 via-transparent to-black/30 pointer-events-none" />
+          <div className="absolute bottom-4 left-6 right-6 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+            <span className="text-xs font-mono text-white/80 uppercase tracking-widest flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              Official Vertex Studio FiveM Scripts
+            </span>
+            <span className="text-xs font-mono text-white/60">
+              QBCore · ESX · Qbox Compatible · Vertex Escrow DRM
+            </span>
+          </div>
+        </motion.div>
       </section>
 
       {/* FEATURED PRODUCTS */}
